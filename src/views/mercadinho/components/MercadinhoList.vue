@@ -2,13 +2,13 @@
     <div>
         <v-data-table-server 
             :headers="headers"
-            :items="fornecedores" 
+            :items="medidas" 
             :items-per-page="options.itemsPerPage"
-            :server-items-length="totalFornecedores"
+            :server-items-length="totalMercadinhos"
             :loading="loading"
-            :items-length="totalFornecedores"
-            :total-items="totalFornecedores"
-            @update:options="fetchFornecedores"
+            :items-length="totalMercadinhos"
+            :total-items="totalMercadinhos"
+            @update:options="fetchMercadinhos"
             :footer-props="{
                 'items-per-page-options': [5, 10, 15],
                 'show-first-last-page': true,
@@ -17,37 +17,37 @@
         >
             <template v-slot:top>
                 <v-toolbar flat>
-                    <v-toolbar-title>Lista de Fornecedores</v-toolbar-title>
+                    <v-toolbar-title>Lista de Mercadinhos</v-toolbar-title>
                     <v-divider class="mx-4" inset vertical></v-divider>
                     <v-spacer></v-spacer>
                     <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchFornecedores">Atualizar</v-btn>
+                    <v-btn color="primary" @click="fetchMercadinhos">Atualizar</v-btn>
                 </v-toolbar>
             </template>
             <template v-slot:item.actions="{ item }">
-                <v-icon small @click="editFornecedor(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteFornecedor(item)">mdi-delete</v-icon>
+                <v-icon small @click="editMercadinho(item)">mdi-pencil</v-icon>
+                <v-icon small @click="deleteMercadinho(item)">mdi-delete</v-icon>
             </template>
         </v-data-table-server>
 
-        <!-- Modal para Adicionar Fornecedor -->
-        <FornecedorAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchFornecedores" @close-modal="closeModal" />
+        <!-- Modal para Adicionar Mercadinho -->
+        <MercadinhoAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchMercadinhos" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
-import FornecedorRepository from '@/shared/http/repositories/fornecedor/fornecedor';
-import FornecedorAdd from './FornecedorAdd.vue';
+import MercadinhoRepository from '@/shared/http/repositories/mercadinho/mercadinho';
+import MercadinhoAdd from './MercadinhoAdd.vue';
 
 export default {
     components: {
-        FornecedorAdd,
+        MercadinhoAdd,
     },
     data() {
         return {
             dialog: false,
-            fornecedores: [],
-            totalFornecedores: 0,
+            medidas: [],
+            totalMercadinhos: 0,
             options: {
                 page: 1, // Página atual
                 itemsPerPage: 10, // Quantidade de itens por página
@@ -65,25 +65,25 @@ export default {
     watch: {
         options: {
             handler() {
-                this.fetchFornecedores();
+                this.fetchMercadinhos();
             },
             deep: true,
         },
     },
     methods: {
-        async fetchFornecedores({ page, itemsPerPage, sortBy }) {
+        async fetchMercadinhos({ page, itemsPerPage, sortBy }) {
             this.loading = true;
             try {
                 const params = {
                     page: page - 1,
                     size: itemsPerPage,
                 };
-                const response = await FornecedorRepository.GetAll({ params });
-                this.fornecedores = response.data.content;
-                this.totalFornecedores = response.data.page.totalElements;
+                const response = await MercadinhoRepository.GetAll({ params });
+                this.medidas = response.data.content;
+                this.totalMercadinhos = response.data.page.totalElements;
                 this.totalPages = response.data.page.totalPages;
             } catch (error) {
-                console.error('Erro ao buscar fornecedores:', error);
+                console.error('Erro ao buscar medidas:', error);
             } finally {
                 this.loading = false;
             }
@@ -99,19 +99,19 @@ export default {
         clearForm() {
             this.editValues = null;
         },
-        editFornecedor(item) {
+        editMercadinho(item) {
             this.editValues = item;
             this.dialog = true;
         },
-        async deleteFornecedor(item) {
-            if (!confirm('Deseja realmente excluir este fornecedor?')) return;
+        async deleteMercadinho(item) {
+            if (!confirm('Deseja realmente excluir este medida?')) return;
 
-           await FornecedorRepository.Delete(item.id);
-           this.fetchFornecedores({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+           await MercadinhoRepository.Delete(item.id);
+           this.fetchMercadinhos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
         },
     },
     mounted() {
-        this.fetchFornecedores({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+        this.fetchMercadinhos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
     },
 };
 </script>

@@ -2,13 +2,13 @@
     <div>
         <v-data-table-server 
             :headers="headers"
-            :items="fornecedores" 
+            :items="produtos" 
             :items-per-page="options.itemsPerPage"
-            :server-items-length="totalFornecedores"
+            :server-items-length="totalProdutos"
             :loading="loading"
-            :items-length="totalFornecedores"
-            :total-items="totalFornecedores"
-            @update:options="fetchFornecedores"
+            :items-length="totalProdutos"
+            :total-items="totalProdutos"
+            @update:options="fetchProdutos"
             :footer-props="{
                 'items-per-page-options': [5, 10, 15],
                 'show-first-last-page': true,
@@ -17,37 +17,37 @@
         >
             <template v-slot:top>
                 <v-toolbar flat>
-                    <v-toolbar-title>Lista de Fornecedores</v-toolbar-title>
+                    <v-toolbar-title>Lista de Produtos</v-toolbar-title>
                     <v-divider class="mx-4" inset vertical></v-divider>
                     <v-spacer></v-spacer>
                     <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchFornecedores">Atualizar</v-btn>
+                    <v-btn color="primary" @click="fetchProdutos">Atualizar</v-btn>
                 </v-toolbar>
             </template>
             <template v-slot:item.actions="{ item }">
-                <v-icon small @click="editFornecedor(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteFornecedor(item)">mdi-delete</v-icon>
+                <v-icon small @click="editProduto(item)">mdi-pencil</v-icon>
+                <v-icon small @click="deleteProduto(item)">mdi-delete</v-icon>
             </template>
         </v-data-table-server>
 
-        <!-- Modal para Adicionar Fornecedor -->
-        <FornecedorAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchFornecedores" @close-modal="closeModal" />
+        <!-- Modal para Adicionar Produto -->
+        <ProdutoAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchProdutos" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
-import FornecedorRepository from '@/shared/http/repositories/fornecedor/fornecedor';
-import FornecedorAdd from './FornecedorAdd.vue';
+import ProdutoRepository from '@/shared/http/repositories/produto/produto';
+import ProdutoAdd from './ProdutoAdd.vue';
 
 export default {
     components: {
-        FornecedorAdd,
+        ProdutoAdd,
     },
     data() {
         return {
             dialog: false,
-            fornecedores: [],
-            totalFornecedores: 0,
+            produtos: [],
+            totalProdutos: 0,
             options: {
                 page: 1, // Página atual
                 itemsPerPage: 10, // Quantidade de itens por página
@@ -57,6 +57,7 @@ export default {
             headers: [
                 { title: 'id', key: 'id' },
                 { title: 'Nome', key: 'nome' },
+                {title: 'Categoria', key: 'categoria.nome'},
                 { title: 'Ações', key: 'actions', sortable: false },
             ],
             editValues: null,
@@ -65,25 +66,25 @@ export default {
     watch: {
         options: {
             handler() {
-                this.fetchFornecedores();
+                this.fetchProdutos();
             },
             deep: true,
         },
     },
     methods: {
-        async fetchFornecedores({ page, itemsPerPage, sortBy }) {
+        async fetchProdutos({ page, itemsPerPage, sortBy }) {
             this.loading = true;
             try {
                 const params = {
                     page: page - 1,
                     size: itemsPerPage,
                 };
-                const response = await FornecedorRepository.GetAll({ params });
-                this.fornecedores = response.data.content;
-                this.totalFornecedores = response.data.page.totalElements;
+                const response = await ProdutoRepository.GetAll({ params });
+                this.produtos = response.data.content;
+                this.totalProdutos = response.data.page.totalElements;
                 this.totalPages = response.data.page.totalPages;
             } catch (error) {
-                console.error('Erro ao buscar fornecedores:', error);
+                console.error('Erro ao buscar produtos:', error);
             } finally {
                 this.loading = false;
             }
@@ -99,19 +100,19 @@ export default {
         clearForm() {
             this.editValues = null;
         },
-        editFornecedor(item) {
+        editProduto(item) {
             this.editValues = item;
             this.dialog = true;
         },
-        async deleteFornecedor(item) {
-            if (!confirm('Deseja realmente excluir este fornecedor?')) return;
+        async deleteProduto(item) {
+            if (!confirm('Deseja realmente excluir este produto?')) return;
 
-           await FornecedorRepository.Delete(item.id);
-           this.fetchFornecedores({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+           await ProdutoRepository.Delete(item.id);
+           this.fetchProdutos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
         },
     },
     mounted() {
-        this.fetchFornecedores({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+        this.fetchProdutos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
     },
 };
 </script>

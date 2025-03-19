@@ -1,8 +1,20 @@
 <template>
     <div>
-        <v-data-table :headers="headers" :items="categorias" :options.sync="options"
-            :server-items-length="totalCategorias" :loading="loading"
-            :footer-props="{ 'items-per-page-text': 'Itens por página' }" class="elevation-1">
+        <v-data-table-server 
+            :headers="headers"
+            :items="categorias" 
+            :items-per-page="options.itemsPerPage"
+            :server-items-length="totalCategorias"
+            :loading="loading"
+            :items-length="totalCategorias"
+            :total-items="totalCategorias"
+            @update:options="fetchCategorias"
+            :footer-props="{
+                'items-per-page-options': [5, 10, 15],
+                'show-first-last-page': true,
+                'color': 'pink' // Define a cor da paginação como rosa
+            }"
+        >
             <template v-slot:top>
                 <v-toolbar flat>
                     <v-toolbar-title>Lista de Categorias</v-toolbar-title>
@@ -12,15 +24,19 @@
                     <v-btn color="primary" @click="fetchCategorias">Atualizar</v-btn>
                 </v-toolbar>
             </template>
-        </v-data-table>
+            <template v-slot:item.actions="{ item }">
+                <v-icon small @click="editCategoria(item)">mdi-pencil</v-icon>
+                <v-icon small @click="deleteCategoria(item)">mdi-delete</v-icon>
+            </template>
+        </v-data-table-server>
 
-        <!-- Modal de Adicionar Fornecedor -->
-        <CategoriaAdd v-model:dialog="dialog" @close-modal="closeModal" />
+        <!-- Modal para Adicionar Categoria -->
+        <CategoriaAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchCategorias" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
-import axios from 'axios';
+import CategoriaRepository from '@/shared/http/repositories/categoria/categoria';
 import CategoriaAdd from './CategoriaAdd.vue';
 
 export default {
@@ -29,19 +45,22 @@ export default {
     },
     data() {
         return {
-            dialog: false, // Estado da modal
-            categorias: [{ id: 1, nome: 'Fornecedor 1', email: 'pedr', telefone: '001' },
-            { id: 2, nome: 'Fornecedor 2', email: 'math', telefone: '002' }
-            ]
-            ,
+            dialog: false,
+            categorias: [],
             totalCategorias: 0,
             options: {
-                page: 1,
-                itemsPerPage: 5,
-                sortBy: [],
-                sortDesc: [],
+                page: 1, // Página atual
+                itemsPerPage: 10, // Quantidade de itens por página
             },
+            totalPages: 0,
             loading: false,
+            headers: [
+                { title: 'id', key: 'id' },
+                { title: 'Nome', key: 'nome' },
+                { title: 'Descrição', key: 'descricao'},
+                { title: 'Ações', key: 'actions', sortable: false },
+            ],
+            editValues: null,
         };
     },
     watch: {
@@ -53,20 +72,17 @@ export default {
         },
     },
     methods: {
-        async fetchCategorias() {
+        async fetchCategorias({ page, itemsPerPage, sortBy }) {
             this.loading = true;
             try {
-                const { page, itemsPerPage, sortBy, sortDesc } = this.options;
-                const response = await axios.get('https://api.exemplo.com/categorias', {
-                    params: {
-                        page,
-                        itemsPerPage,
-                        sortBy: sortBy[0],
-                        sortDesc: sortDesc[0],
-                    },
-                });
-                this.categorias = response.data.items;
-                this.totalCategorias = response.data.total;
+                const params = {
+                    page: page - 1,
+                    size: itemsPerPage,
+                };
+                const response = await CategoriaRepository.GetAll({ params });
+                this.categorias = response.data.content;
+                this.totalCategorias = response.data.page.totalElements;
+                this.totalPages = response.data.page.totalPages;
             } catch (error) {
                 console.error('Erro ao buscar categorias:', error);
             } finally {
@@ -74,14 +90,29 @@ export default {
             }
         },
         openModal() {
+            this.clearForm()
             this.dialog = true;
         },
         closeModal() {
+            this.clearForm()
             this.dialog = false;
+        },
+        clearForm() {
+            this.editValues = null;
+        },
+        editCategoria(item) {
+            this.editValues = item;
+            this.dialog = true;
+        },
+        async deleteCategoria(item) {
+            if (!confirm('Deseja realmente excluir esta categoria?')) return;
+
+           await CategoriaRepository.Delete(item.id);
+           this.fetchCategorias({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
         },
     },
     mounted() {
-        this.fetchCategorias();
+        this.fetchCategorias({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
     },
 };
 </script>

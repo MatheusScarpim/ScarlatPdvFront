@@ -2,13 +2,12 @@
     <v-dialog v-model="internalDialog" max-width="600px">
         <v-card>
             <v-card-title>
-                <span class="headline">Adicionar Categoria</span>
+                <span class="headline">{{ values ? 'Alterar Categoria' : 'Adicionar Categoria' }}</span>
             </v-card-title>
             <v-card-text>
                 <v-form ref="form">
                     <v-text-field v-model="form.nome" label="Nome" required></v-text-field>
-                    <v-text-field v-model="form.email" label="Email" required></v-text-field>
-                    <v-text-field v-model="form.telefone" label="Telefone" required></v-text-field>
+                    <v-text-field v-model="form.descricao" label="Descrição" required></v-text-field>
                 </v-form>
             </v-card-text>
             <v-card-actions>
@@ -21,20 +20,27 @@
 </template>
 
 <script>
+
+import CategoriaRepository from '@/shared/http/repositories/categoria/categoria';
+
 export default {
     name: 'CategoriaAdd',
     props: {
         dialog: {
             type: Boolean,
             required: true
+        },
+        values: {
+            type: Object,
+            required: false,
+            default: null
         }
     },
     data() {
         return {
             form: {
                 nome: '',
-                email: '',
-                telefone: ''
+                descricao: ''
             }
         };
     },
@@ -48,10 +54,28 @@ export default {
             }
         }
     },
+    watch: {
+        values: {
+            handler() {
+                if(this.values) {
+                    this.form = this.values;
+                } else {
+                    this.form = {
+                        nome: '',
+                        descricao: ''
+                    };
+                }
+            },
+            deep: true
+        }
+    },
     methods: {
-        handleSubmit() {
-            // Simulação de envio do formulário
-            console.log("Categoria salvo:", this.form);
+        async handleSubmit() {
+            if(this.values) {
+                await CategoriaRepository.Update(this.values.id, this.form);
+            } else {
+                await CategoriaRepository.Create(this.form);
+            }
             this.$emit('update:dialog', false);
         },
         close() {

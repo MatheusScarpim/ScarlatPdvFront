@@ -2,7 +2,7 @@
     <v-dialog v-model="internalDialog" max-width="600px">
         <v-card>
             <v-card-title>
-                <span class="headline">{{ values ? 'Alterar Fornecedor' : 'Adicionar Fornecedor' }}</span>
+                <span class="headline">{{ values ? 'Alterar Mercadinho' : 'Adicionar Mercadinho' }}</span>
             </v-card-title>
             <v-card-text>
                 <v-form ref="form">
@@ -20,10 +20,10 @@
 
 <script>
 
-import FornecedorRepository from '@/shared/http/repositories/fornecedor/fornecedor';
+import MercadinhoRepository from '@/shared/http/repositories/mercadinho/mercadinho';
 
 export default {
-    name: 'FornecedorAdd',
+    name: 'MercadinhoAdd',
     props: {
         dialog: {
             type: Boolean,
@@ -69,9 +69,9 @@ export default {
     methods: {
         async handleSubmit() {
             if(this.values) {
-                await FornecedorRepository.Update(this.values.id, this.form);
+                await MercadinhoRepository.Update(this.values.id, this.form);
             } else {
-                await FornecedorRepository.Create(this.form);
+                await MercadinhoRepository.Create(this.form);
             }
             this.$emit('update:dialog', false);
         },

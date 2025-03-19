@@ -2,11 +2,12 @@
     <v-dialog v-model="internalDialog" max-width="600px">
         <v-card>
             <v-card-title>
-                <span class="headline">{{ values ? 'Alterar Fornecedor' : 'Adicionar Fornecedor' }}</span>
+                <span class="headline">{{ values ? 'Alterar Medida' : 'Adicionar Medida' }}</span>
             </v-card-title>
             <v-card-text>
                 <v-form ref="form">
-                    <v-text-field v-model="form.nome" label="Nome" required></v-text-field>
+                    <v-text-field v-model="form.tipo" label="Tipo" required></v-text-field>
+                    <v-text-field v-model="form.abreviacao" label="Abreviação" required></v-text-field>
                 </v-form>
             </v-card-text>
             <v-card-actions>
@@ -20,10 +21,10 @@
 
 <script>
 
-import FornecedorRepository from '@/shared/http/repositories/fornecedor/fornecedor';
+import MedidaRepository from '@/shared/http/repositories/medida/medida';
 
 export default {
-    name: 'FornecedorAdd',
+    name: 'MedidaAdd',
     props: {
         dialog: {
             type: Boolean,
@@ -38,7 +39,8 @@ export default {
     data() {
         return {
             form: {
-                nome: '',
+                tipo: '',
+                abreviacao: ''
             }
         };
     },
@@ -60,6 +62,7 @@ export default {
                 } else {
                     this.form = {
                         nome: '',
+                        abreviacao: ''
                     };
                 }
             },
@@ -69,9 +72,9 @@ export default {
     methods: {
         async handleSubmit() {
             if(this.values) {
-                await FornecedorRepository.Update(this.values.id, this.form);
+                await MedidaRepository.Update(this.values.id, this.form);
             } else {
-                await FornecedorRepository.Create(this.form);
+                await MedidaRepository.Create(this.form);
             }
             this.$emit('update:dialog', false);
         },
