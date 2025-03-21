@@ -7,6 +7,7 @@ import Medida from  '@/views/private/medida/Medida.vue';
 import Mercadinho from '@/views/mercadinho/Mercadinho.vue';
 import Produto from '@/views/private/produto/Produto.vue';
 import VisualizarProduto from '@/views/private/visualizar-produto/VisualizarProduto.vue';
+import carrinho from '@/views/private/carrinho/carrinho.vue';
 
 
 const routes = [
@@ -17,8 +18,8 @@ const routes = [
   {path: '/medida', component: Medida},
   {path: '/mercadinho', component: Mercadinho},
   {path: '/produto', component: Produto},
-  {path: '/vizualizar-produto', component: VisualizarProduto}
-
+  {path: '/vizualizar-produto', component: VisualizarProduto},
+  {path: '/carrinho', component: carrinho}
 ];
 const router = createRouter({
   history: createWebHistory(),

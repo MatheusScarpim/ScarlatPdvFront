@@ -42,7 +42,7 @@ function toggleSidebar() {
   padding: 20px;
   padding-left: 80px;
   padding-right: 80px;
-  padding-top: 200px; /* Ajuste conforme a altura da sua navbar */
+  padding-top: 150px; /* Ajuste conforme a altura da sua navbar */
   transition: margin-left 0.3s;
 }
 
