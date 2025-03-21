@@ -9,11 +9,6 @@
             :items-length="totalProdutos"
             :total-items="totalProdutos"
             @update:options="fetchProdutos"
-            :footer-props="{
-                'items-per-page-options': [5, 10, 15],
-                'show-first-last-page': true,
-                'color': 'pink' // Define a cor da paginação como rosa
-            }"
         >
             <template v-slot:top>
                 <v-toolbar flat>

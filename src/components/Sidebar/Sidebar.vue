@@ -11,6 +11,7 @@
             <li><router-link to="/medida">ℹ️ Medida</router-link></li>
             <li><router-link to="/mercadinho">📞 Mercadinho</router-link></li>
             <li><router-link to="/produto">📞 Produto</router-link></li>
+            <li><router-link to="/vizualizar-produto">📞 Ver Produto</router-link></li>
           </ul>
         </nav>
       </div>

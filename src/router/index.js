@@ -6,6 +6,7 @@ import Armazem from '@/views/private/armazem/Armazem.vue';
 import Medida from  '@/views/private/medida/Medida.vue';
 import Mercadinho from '@/views/mercadinho/Mercadinho.vue';
 import Produto from '@/views/private/produto/Produto.vue';
+import VisualizarProduto from '@/views/private/visualizar-produto/VisualizarProduto.vue';
 
 
 const routes = [
@@ -15,7 +16,8 @@ const routes = [
   {path: '/armazem', component: Armazem},
   {path: '/medida', component: Medida},
   {path: '/mercadinho', component: Mercadinho},
-  {path: '/produto', component: Produto}
+  {path: '/produto', component: Produto},
+  {path: '/vizualizar-produto', component: VisualizarProduto}
 
 ];
 const router = createRouter({

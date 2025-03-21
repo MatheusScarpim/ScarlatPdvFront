@@ -5,16 +5,28 @@
                 <span class="headline">{{ values ? 'Alterar Produto' : 'Adicionar Produto' }}</span>
             </v-card-title>
             <v-card-text>
-                <v-form ref="form">
-                    <v-text-field v-model="form.nome" label="Nome" required></v-text-field>
+                <v-form ref="form" v-model="valid">
+                    <v-text-field v-model="form.nome" label="Nome" required :rules="[rules.required]"></v-text-field>
                     <v-text-field v-model="form.dataValidade" label="Data de Validade" type="date"></v-text-field>
-                    <v-text-field label="Valor" type="number" v-model="valor" step="0.01"></v-text-field>
-                    <v-select v-model="form.categoriaId" :items="categorias" item-text="text" item-value="value"
-                        label="Categoria" required></v-select>
+                    <v-number-input :precision="2" hide-details="auto"></v-number-input>
+                    <v-text-field v-model="form.qtdMedida" type="number" step="0.01" label="Quantidade" hide-details="auto"
+                        @blur="formatQtdMedida"></v-text-field>
+
+                    <v-text-field v-model="form.preco" type="number" step="0.01" label="Preço" hide-details="auto"
+                        @blur="formatPreco"></v-text-field>
+
+                    <v-text-field v-model="form.codBarra" label="Código de barra" ></v-text-field>
+                    <v-text-field v-model="form.ncm" label="Ncm" ></v-text-field>
+                    <v-text-field v-model="form.codCest" label="Cod. Cest" ></v-text-field>
+
+
+
+                    <v-select v-model="form.categoriaId" :items="categorias" item-text="title" item-value="value"
+                        label="Categoria" required :rules="[rules.required]"></v-select>
                     <v-select v-model="form.medidaId" :items="medidas" item-text="title" item-value="value"
-                        label="Medida" required></v-select>
+                        label="Medida" required :rules="[rules.required]"></v-select>
                     <v-select v-model="form.fornecedorId" :items="fornecedores" item-text="title" item-value="value"
-                        label="Fornecedor" required></v-select>
+                        label="Fornecedor" required :rules="[rules.required]"></v-select>
                 </v-form>
             </v-card-text>
             <v-card-actions>
@@ -27,11 +39,11 @@
 </template>
 
 <script>
-
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
 import MedidaRepository from '@/shared/http/repositories/medida/medida';
 import CategoriaRepository from '@/shared/http/repositories/categoria/categoria';
 import FornecedorRepository from '@/shared/http/repositories/fornecedor/fornecedor';
+
 
 export default {
     name: 'ProdutoAdd',
@@ -53,11 +65,20 @@ export default {
                 categoriaId: '',
                 medidaId: '',
                 fornecedorId: '',
-                dataValidade: null
+                dataValidade: null,
+                qtdMedida: 0.0,  
+                preco: 0.0,
+                codBarra: '',
+                ncm: '',
+                codCest: ''
             },
             medidas: [],
             categorias: [],
-            fornecedores: []
+            fornecedores: [],
+            valid: false,
+            rules: {
+                required: value => !!value || 'Campo obrigatório'
+            }
         };
     },
     computed: {
@@ -68,30 +89,46 @@ export default {
             set(value) {
                 this.$emit('update:dialog', value);
             }
-        }
+        },
     },
     watch: {
         values: {
             handler() {
                 if (this.values) {
-                    this.form = this.values;
+                    this.form = {
+                        ...this.values,
+                        qtdMedida: parseFloat(this.values.qtdMedida) || 0.0,
+                        preco: parseFloat(this.values.preco) || 0.0
+                    };
                 } else {
                     this.form = {
+                        id: '',
                         nome: '',
                         categoriaId: '',
                         medidaId: '',
                         fornecedorId: '',
-                        dataValidade: null
+                        dataValidade: null,
+                        qtdMedida: 0.0,
+                        preco: 0.0,
+                        codBarra: '',
+                        ncm: '',
+                        codCest: ''
                     };
                 }
             },
             deep: true
-        },
+        }
     },
     mounted() {
         this.onGetAll();
     },
     methods: {
+        formatQtdMedida() {
+            this.form.qtdMedida = parseFloat(this.form.qtdMedida).toFixed(2);
+        },
+        formatPreco() {
+            this.form.preco = parseFloat(this.form.preco).toFixed(2);
+        },
         async onGetAll() {
             await this.onGetCategorias();
             await this.onGetFornecedores();
@@ -99,36 +136,37 @@ export default {
         },
         async onGetMedidas() {
             const req = await MedidaRepository.GetAll();
-            const data = req.data.content.map(item => ({
+            this.medidas = req.data.content.map(item => ({
                 value: item.id.toString(),
                 title: item.tipo
             }));
-            this.medidas = data;
         },
         async onGetCategorias() {
             const req = await CategoriaRepository.GetAll();
-            const data = req.data.content.map(item => ({
+            this.categorias = req.data.content.map(item => ({
                 value: item.id.toString(),
                 title: item.nome
             }));
-            this.categorias = data;
         },
         async onGetFornecedores() {
             const req = await FornecedorRepository.GetAll();
-            const data = req.data.content.map(item => ({
+            this.fornecedores = req.data.content.map(item => ({
                 value: item.id,
                 title: item.nome
             }));
-            this.fornecedores = data;
         },
         async handleSubmit() {
-            if (this.values) {
-                // await ProdutoRepository.Update(this.values.id, this.form);
+            const { valid } = await this.$refs.form.validate();
+            if (valid) {
+                if (this.values) {
+                    await ProdutoRepository.Update(this.values.id, this.form);
+                } else {
+                    await ProdutoRepository.Create(this.form);
+                }
+                this.$emit('update:dialog', false);
             } else {
-                // await ProdutoRepository.Create(this.form);
+                console.log('Formulário inválido');
             }
-            console.log(this.form)
-            // this.$emit('update:dialog', false);
         },
         close() {
             this.$emit('update:dialog', false);
