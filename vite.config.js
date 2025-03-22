@@ -12,6 +12,7 @@ export default defineConfig({
         secure: false,
       },
     },
+    allowedHosts:true, // Permitir que todos os hosts acessem o servidor
   },
   build: {
     outDir: 'dist', // Pasta de saída para a build final

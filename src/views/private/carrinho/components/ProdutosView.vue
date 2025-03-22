@@ -102,16 +102,13 @@ export default {
 
 .produto-list {
     display: flex;
-    flex-direction: row;
-    overflow-x: auto;
+    flex-direction: column;
 }
 
 .produto-item {
     display: flex;
-    flex-direction: column;
     justify-content: space-between;
-    padding: 10px;
-    border-right: 1px solid #ccc;
-    min-width: 200px;
+    padding: 10px 0;
+    border-bottom: 1px solid #ccc;
 }
 </style>

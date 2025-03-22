@@ -1,3 +1,4 @@
+@ -0,0 +1,34 @@
 <template> 
     <div>
         <LeitorCodBarra @barcode-read="onBarcodeRead"/>
