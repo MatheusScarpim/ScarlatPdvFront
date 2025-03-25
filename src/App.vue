@@ -14,7 +14,7 @@ function toggleSidebar() {
   <div class="app-container d-flex flex-column">
     <Navbar @toggle-sidebar="toggleSidebar" />
     <div class="d-flex flex-grow-1">
-      <Sidebar v-if="isSidebarVisible" class="sidebar" />
+      <Sidebar :isSidebarVisible="isSidebarVisible" :style="{ width: isSidebarVisible ? '200px' : '65px' }" class="sidebar" />
       <div :class="['main-content', { 'ml-0': !isSidebarVisible, 'ml-250': isSidebarVisible }]">
         <router-view />
       </div>
@@ -28,11 +28,10 @@ function toggleSidebar() {
 }
 
 .sidebar {
-  width: 250px;
-  background-color: #333;
+  background-color: var(--cor-sidebar-fundo);
   color: white;
   position: fixed;
-  top: 75px; /* Ajuste conforme a altura da sua navbar */
+  top: 75px; 
   bottom: 0;
   z-index: 1000;
 }
@@ -41,16 +40,16 @@ function toggleSidebar() {
   flex-grow: 1;
   padding: 20px;
   padding-left: 80px;
-  padding-right: 80px;
-  padding-top: 150px; /* Ajuste conforme a altura da sua navbar */
+  padding-top: 150px; 
   transition: margin-left 0.3s;
+  margin-left: 250;
 }
 
 .ml-0 {
-  margin-left: 0;
+  padding-left: 80px;
 }
 
 .ml-250 {
-  margin-left: 250px;
+  margin-left: 150px;
 }
 </style>
