@@ -88,6 +88,75 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- Modal de Sucesso no Pagamento -->
+        <v-dialog v-model="showSuccessModal" max-width="500">
+            <v-card>
+                <v-card-title class="headline success--text">
+                    <v-icon color="success" class="mr-2">mdi-check-circle</v-icon>
+                    Pagamento Aprovado!
+                </v-card-title>
+                <v-card-text>
+                    <v-alert
+                        type="success"
+                        border="left"
+                        elevation="2"
+                        class="mb-4"
+                    >
+                        Seu pagamento foi processado com sucesso!
+                    </v-alert>
+                    <div class="text-center">
+                        <v-icon color="success" size="64" class="mb-4">mdi-check-circle</v-icon>
+                        <p class="text-subtitle-1 mb-2">Detalhes do pagamento:</p>
+                        <p class="text-body-2">ID: {{ paymentStatus?.id }}</p>
+                        <p class="text-body-2">Data: {{ formatDate(paymentStatus?.date_approved) }}</p>
+                        <p class="text-body-2">Valor: R$ {{ paymentStatus?.transaction_amount?.toFixed(2) }}</p>
+                    </div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        color="success"
+                        text
+                        @click="closeSuccessModal"
+                    >
+                        Fechar
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- Modal de Erro de Pagamento -->
+        <v-dialog v-model="showErrorModal" max-width="500">
+            <v-card>
+                <v-card-title class="headline error--text">
+                    <v-icon color="error" class="mr-2">mdi-alert-circle</v-icon>
+                    Erro no Pagamento
+                </v-card-title>
+                <v-card-text>
+                    <v-alert
+                        type="error"
+                        border="left"
+                        elevation="2"
+                        class="mb-4"
+                    >
+                        {{ getErrorMessage }}
+                    </v-alert>
+                    <p class="text-subtitle-1 mb-2">Código do erro:</p>
+                    <p class="text-body-2">{{ paymentStatus?.status_detail || 'Código não disponível' }}</p>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        color="primary"
+                        text
+                        @click="closeErrorModal"
+                    >
+                        Fechar
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
 
@@ -110,7 +179,29 @@ export default {
                 paymentId: null
             },
             paymentStatus: null,
-            statusCheckInterval: null
+            statusCheckInterval: null,
+            showErrorModal: false,
+            showSuccessModal: false,
+            errorMessages: {
+                // Erros de Fraude
+                'cc_rejected_blacklist': 'Pagamento recusado por suspeita de fraude (cartão na lista negra)',
+                'cc_rejected_high_risk': 'Pagamento recusado por alto risco de fraude',
+                'cc_rejected_other_reason': 'Pagamento recusado por suspeita de fraude',
+
+                // Erros do Banco Emissor
+                'cc_rejected_call_for_authorize': 'Pagamento recusado - Necessária autorização do banco',
+                'cc_rejected_card_disabled': 'Cartão desabilitado para compras online',
+                'cc_rejected_duplicated_payment': 'Pagamento duplicado',
+                'cc_rejected_insufficient_amount': 'Saldo ou limite insuficiente',
+                'cc_rejected_invalid_installments': 'Número de parcelas inválido',
+                'cc_rejected_max_attempts': 'Número máximo de tentativas excedido',
+
+                // Erros de Preenchimento
+                'cc_rejected_bad_filled_card_number': 'Número do cartão inválido',
+                'cc_rejected_bad_filled_date': 'Data de validade do cartão inválida',
+                'cc_rejected_bad_filled_security_code': 'Código de segurança do cartão inválido',
+                'cc_rejected_bad_filled_other': 'Dados do cartão preenchidos incorretamente'
+            }
         };
     },
     props: {
@@ -137,6 +228,8 @@ export default {
         'paymentStatus.status'(newStatus) {
             if (newStatus === 'approved') {
                 this.handlePaymentApproved();
+            } else if (newStatus === 'rejected') {
+                this.handlePaymentRejected();
             }
         }
     },
@@ -171,6 +264,10 @@ export default {
                 default:
                     return 'Status desconhecido';
             }
+        },
+        getErrorMessage() {
+            if (!this.paymentStatus?.status_detail) return 'Erro desconhecido no pagamento';
+            return this.errorMessages[this.paymentStatus.status_detail] || 'Erro no processamento do pagamento';
         }
     },
     methods: {
@@ -258,14 +355,37 @@ export default {
         },
         handlePaymentApproved() {
             this.stopStatusCheck();
-            this.cart = []; // Limpa o carrinho
-            setTimeout(() => {
-                this.showPaymentModal = false;
-            }, 2000); // Fecha o modal após 2 segundos
+            this.showPaymentModal = false;
+            this.showSuccessModal = true;
+        },
+        handlePaymentRejected() {
+            this.stopStatusCheck();
+            this.showPaymentModal = false;
+            this.showErrorModal = true;
         },
         closePaymentModal() {
             this.stopStatusCheck();
             this.showPaymentModal = false;
+        },
+        closeErrorModal() {
+            this.showErrorModal = false;
+            this.paymentStatus = null;
+        },
+        closeSuccessModal() {
+            this.showSuccessModal = false;
+            this.paymentStatus = null;
+            this.cart = []; // Limpa o carrinho após fechar o modal de sucesso
+        },
+        formatDate(dateString) {
+            if (!dateString) return 'Não disponível';
+            const date = new Date(dateString);
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         }
     },
     beforeDestroy() {
@@ -297,5 +417,13 @@ export default {
     width: 100%;
     height: auto;
     margin: 0 auto;
+}
+
+.error--text {
+    color: #ff5252 !important;
+}
+
+.success--text {
+    color: #4caf50 !important;
 }
 </style>
