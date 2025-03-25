@@ -157,12 +157,96 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- Modal de Comprovante -->
+        <v-dialog v-model="showReceiptModal" max-width="600">
+            <v-card>
+                <v-card-title class="headline primary--text">
+                    <v-icon color="primary" class="mr-2">mdi-receipt</v-icon>
+                    Comprovante de Compra
+                </v-card-title>
+                <v-card-text>
+                    <v-alert
+                        type="success"
+                        border="left"
+                        elevation="2"
+                        class="mb-4"
+                    >
+                        Compra realizada com sucesso!
+                    </v-alert>
+                    
+                    <div class="receipt-content">
+                        <div class="receipt-header mb-4">
+                            <h3 class="text-h6">Mercado Scarlat</h3>
+                            <p class="text-caption">CNPJ: XX.XXX.XXX/XXXX-XX</p>
+                        </div>
+
+                        <v-divider class="mb-4"></v-divider>
+
+                        <div class="receipt-items mb-4">
+                            <h4 class="text-subtitle-1 mb-2">Itens Comprados:</h4>
+                            <div v-for="item in cart" :key="item.produto.id" class="receipt-item">
+                                <div class="d-flex justify-space-between">
+                                    <span>{{ item.produto.nome }}</span>
+                                    <span>{{ item.quantidade }}x</span>
+                                </div>
+                                <div class="d-flex justify-space-between">
+                                    <span>R$ {{ item.produto.preco.toFixed(2) }}</span>
+                                    <span>R$ {{ (item.produto.preco * item.quantidade).toFixed(2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <v-divider class="mb-4"></v-divider>
+
+                        <div class="receipt-total mb-4">
+                            <div class="d-flex justify-space-between">
+                                <span class="text-h6">Total:</span>
+                                <span class="text-h6">R$ {{ total.toFixed(2) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="receipt-payment-info mb-4">
+                            <p class="text-caption">Forma de Pagamento: PIX</p>
+                            <p class="text-caption">Data: {{ formatDate(paymentStatus?.date_approved) }}</p>
+                            <p class="text-caption">ID da Transação: {{ paymentStatus?.id }}</p>
+                        </div>
+
+                        <v-divider class="mb-4"></v-divider>
+
+                        <div class="receipt-footer text-center">
+                            <p class="text-caption">Obrigado pela preferência!</p>
+                            <p class="text-caption">Volte sempre!</p>
+                        </div>
+                    </div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        color="primary"
+                        @click="downloadReceipt"
+                        class="mr-2"
+                    >
+                        <v-icon left>mdi-download</v-icon>
+                        Baixar Comprovante
+                    </v-btn>
+                    <v-btn
+                        color="primary"
+                        text
+                        @click="closeReceiptModal"
+                    >
+                        Fechar
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
 
 <script>
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
 import PagamentoRepository from '@/shared/http/repositories/pagamento/pagamento';
+import html2pdf from 'html2pdf.js';
 
 export default {
     name: 'ProdutoView',
@@ -182,6 +266,7 @@ export default {
             statusCheckInterval: null,
             showErrorModal: false,
             showSuccessModal: false,
+            showReceiptModal: false,
             errorMessages: {
                 // Erros de Fraude
                 'cc_rejected_blacklist': 'Pagamento recusado por suspeita de fraude (cartão na lista negra)',
@@ -345,7 +430,7 @@ export default {
         },
         startStatusCheck() {
             this.checkPaymentStatus(); // Primeira verificação imediata
-            this.statusCheckInterval = setInterval(this.checkPaymentStatus, 15000); // 15 segundos
+            this.statusCheckInterval = setInterval(this.checkPaymentStatus, 5000); // 5 segundos
         },
         stopStatusCheck() {
             if (this.statusCheckInterval) {
@@ -357,6 +442,11 @@ export default {
             this.stopStatusCheck();
             this.showPaymentModal = false;
             this.showSuccessModal = true;
+            // Após 2 segundos, mostra o modal de comprovante
+            setTimeout(() => {
+                this.showSuccessModal = false;
+                this.showReceiptModal = true;
+            }, 2000);
         },
         handlePaymentRejected() {
             this.stopStatusCheck();
@@ -375,6 +465,73 @@ export default {
             this.showSuccessModal = false;
             this.paymentStatus = null;
             this.cart = []; // Limpa o carrinho após fechar o modal de sucesso
+        },
+        closeReceiptModal() {
+            this.showReceiptModal = false;
+            this.cart = []; // Limpa o carrinho após fechar o comprovante
+        },
+        async downloadReceipt() {
+            try {
+                // Elemento que será convertido para PDF
+                const element = document.createElement('div');
+                element.innerHTML = `
+                    <div style="font-family: 'Courier New', monospace; padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h2 style="margin: 0;">Mercado Scarlat</h2>
+                            <p style="margin: 5px 0;">CNPJ: XX.XXX.XXX/XXXX-XX</p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="margin: 0 0 10px 0;">Itens Comprados:</h3>
+                            ${this.cart.map(item => `
+                                <div style="margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span>${item.produto.nome}</span>
+                                        <span>${item.quantidade}x</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span>R$ ${item.produto.preco.toFixed(2)}</span>
+                                        <span>R$ ${(item.produto.preco * item.quantidade).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div style="margin-bottom: 20px; border-top: 2px dashed #000; padding-top: 10px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-weight: bold;">Total:</span>
+                                <span style="font-weight: bold;">R$ ${this.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <p style="margin: 5px 0;">Forma de Pagamento: PIX</p>
+                            <p style="margin: 5px 0;">Data: ${this.formatDate(this.paymentStatus?.date_approved)}</p>
+                            <p style="margin: 5px 0;">ID da Transação: ${this.paymentStatus?.id}</p>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 30px;">
+                            <p style="margin: 5px 0;">Obrigado pela preferência!</p>
+                            <p style="margin: 5px 0;">Volte sempre!</p>
+                        </div>
+                    </div>
+                `;
+
+                // Configurações do PDF
+                const opt = {
+                    margin: 1,
+                    filename: `comprovante_${this.paymentStatus?.id || 'scarlat'}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+
+                // Gera e faz o download do PDF
+                await html2pdf().set(opt).from(element).save();
+            } catch (error) {
+                console.error('Erro ao gerar PDF:', error);
+                alert('Erro ao gerar o comprovante. Por favor, tente novamente.');
+            }
         },
         formatDate(dateString) {
             if (!dateString) return 'Não disponível';
@@ -425,5 +582,27 @@ export default {
 
 .success--text {
     color: #4caf50 !important;
+}
+
+.receipt-content {
+    font-family: 'Courier New', monospace;
+}
+
+.receipt-header {
+    text-align: center;
+}
+
+.receipt-item {
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+
+.receipt-total {
+    border-top: 1px dashed #ccc;
+    padding-top: 8px;
+}
+
+.receipt-footer {
+    font-style: italic;
 }
 </style>
