@@ -384,10 +384,17 @@ export default {
         async finalizarCompra() {
             try {
                 this.loading = true;
-                const productIds = this.cart.map(item => item.produto.id);
+                
+                // Transforma o carrinho no formato esperado pela API
+                const products = {};
+                this.cart.forEach(item => {
+                    products[item.produto.id] = {
+                        quantity: item.quantidade
+                    };
+                });
                 
                 const response = await PagamentoRepository.CreatePixPayment({
-                    productIds: productIds
+                    products: products
                 });
 
                 // Atualizar dados do pagamento
