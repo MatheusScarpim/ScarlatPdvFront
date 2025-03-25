@@ -26,8 +26,6 @@
         <v-row>
             <v-col cols="12" class="text-right">
                 <p>Total: R$ {{ total.toFixed(2) }}</p>
-            </v-col>
-        </v-row>
                 <v-btn
                     color="primary"
                     class="mt-4"
@@ -257,7 +255,6 @@ export default {
             produtos: [],
             loading: false,
             errored: false,
-            cart: []
             cart: [],
             showPaymentModal: false,
             paymentData: {
@@ -383,7 +380,6 @@ export default {
             } else {
                 this.cart.push({ produto, quantidade: 1 });
             }
-        }
         },
         async finalizarCompra() {
             try {
