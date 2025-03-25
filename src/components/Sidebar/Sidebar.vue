@@ -1,63 +1,117 @@
 <template>
-    <div class="container">
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <nav>
-          <ul>
-            <li><router-link to="/">🏠 Home</router-link></li>
-            <li><router-link to="/fornecedor">ℹ️ Fornecedor</router-link></li>
-            <li><router-link to="/armazem">📞 Armazem</router-link></li>
-            <li><router-link to="/categoria">ℹ️ Categoria</router-link></li>
-            <li><router-link to="/medida">ℹ️ Medida</router-link></li>
-            <li><router-link to="/mercadinho">📞 Mercadinho</router-link></li>
-            <li><router-link to="/produto">📞 Produto</router-link></li>
-            <li><router-link to="/vizualizar-produto">📞 Ver Produto</router-link></li>
-          </ul>
-        </nav>
-      </div>
+  <div class="container">
+    <!-- Sidebar -->
+    <div :class="['sidebar', { 'sidebar-collapsed': !isSidebarVisible }]">
+      <nav>
+        <ul>
+          <li>
+            <router-link to="/">
+              <i class="fa fa-home"></i>
+              <span v-if="isSidebarVisible">Home</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/fornecedor">
+              <i class="fa fa-info-circle"></i>
+              <span v-if="isSidebarVisible">Fornecedor</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/armazem">
+              <i class="fa fa-warehouse"></i>
+              <span v-if="isSidebarVisible">Armazem</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/categoria">
+              <i class="fa fa-list-alt"></i>
+              <span v-if="isSidebarVisible">Categoria</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/medida">
+              <i class="fa fa-balance-scale"></i>
+              <span v-if="isSidebarVisible">Medida</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/mercadinho">
+              <i class="fa fa-store"></i>
+              <span v-if="isSidebarVisible">Mercadinho</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/produto">
+              <i class="fa fa-box"></i>
+              <span v-if="isSidebarVisible">Produto</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/vizualizar-produto">
+              <i class="fa fa-eye"></i>
+              <span v-if="isSidebarVisible">Ver Produto</span>
+            </router-link>
+          </li>
+        </ul>
+      </nav>
     </div>
+  </div>
 </template>
 
 <script>
 export default {
-    name: 'Sidebar'
+  name: 'Sidebar',
+  props: {
+    isSidebarVisible: {
+      type: Boolean,
+      required: true
+    }
+  }
 };
 </script>
 
 <style scoped>
 .container {
-    display: flex;
+  display: flex;
 }
 
 .sidebar {
-    width: 130px;
-    height: 100vh;
-    background-color: #333;
-    color: white;
-    position: fixed;
-    left: 0;
-    z-index: 1000;
+  padding-top: 20px;
+  width: 250px;
+  height: 100vh;
+  background-color: var(--cor-sidebar-fundo);
+  color: white;
+  z-index: 1000;
+  transition: width 0.3s;
+}
+
+.sidebar-collapsed {
+  width: 70px;
 }
 
 .sidebar nav ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
+  list-style-type: none;
+  padding: 0;
 }
 
 .sidebar nav ul li {
-    padding: 10px;
-    text-align: center;
+  padding: 15px 10px;
+  text-align: center;
 }
 
 .sidebar nav ul li a {
-    color: white;
-    text-decoration: none;
-    display: block;
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar nav ul li a:hover {
-    background-color: #575757;
+  color: var(--cor-hover-link); 
 }
 
-</style>
+.sidebar nav ul li a span {
+  margin-left: 10px;
+}
+</style>  

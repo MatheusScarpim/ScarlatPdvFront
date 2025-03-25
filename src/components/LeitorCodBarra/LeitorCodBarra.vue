@@ -5,7 +5,7 @@
                 <v-btn @click="toggleMode" class="ma-2">{{ isTyping ? 'Usar Leitor' : 'Digitar Código' }}</v-btn>
             </v-col>
         </v-row>
-        <div class="hidden-barcode-reader">
+        <div class="hidden-barcode-reader" v-if="false">
             <StreamBarcodeReader @decode="onBarcodeRead" :options="{ video: { facingMode: 'environment' } }" />
         </div>
         <v-dialog v-model="dialog" max-width="400">
@@ -38,6 +38,7 @@ export default {
             isTyping: false,
             isReading: false, // Variável de controle
             dialog: false, // Controle do dialog
+            inputBuffer: '', // Buffer para capturar a entrada do teclado
         };
     },
     watch: {
@@ -46,6 +47,12 @@ export default {
                 this.isTyping = false; // Volta para o leitor quando o dialog é fechado
             }
         }
+    },
+    mounted() {
+        window.addEventListener('keydown', this.handleKeydown);
+    },
+    beforeDestroy() {
+        window.removeEventListener('keydown', this.handleKeydown);
     },
     methods: {
         toggleMode() {
@@ -68,7 +75,8 @@ export default {
                 this.barcode = null;
                 this.barcodeInput = '';
                 this.isReading = false; // Libera a leitura após 3 segundos
-            }, 3000); // Bloqueia a leitura por 3 segundos
+                this.inputBuffer = '';
+            }, 1000); // Bloqueia a leitura por 3 segundos
         },
         playBeep() {
             const context = new (window.AudioContext || window.webkitAudioContext)();
@@ -89,6 +97,18 @@ export default {
                 timeout: 1300, // Tempo da notificação reduzido
             });
         },
+        handleKeydown(event) {
+            if (!this.isTyping) {
+                const validKeys = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]$/;
+                if (validKeys.test(event.key)) {
+                    this.inputBuffer += event.key;
+                }
+                if (event.key === 'Enter') {
+                    console.log('Enter key pressed:', this.inputBuffer);
+                    this.onBarcodeRead(this.inputBuffer);
+                }
+            }
+        }
     },
 };
 </script>
