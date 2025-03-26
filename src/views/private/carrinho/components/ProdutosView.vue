@@ -11,31 +11,123 @@
                 <v-alert type="error">Ocorreu um erro ao carregar os produtos.</v-alert>
             </v-col>
         </v-row>
-        <v-row>
+        
+        <!-- Cabeçalho do Carrinho -->
+        <v-row class="mb-6">
             <v-col cols="12">
-                <div class="produto-list">
-                    <div class="produto-item" v-for="item in cart" :key="item.produto.id">
-                        <span>{{ item.produto.nome }}</span>
-                        <span>Quantidade: {{ item.quantidade }}</span>
-                        <span>Valor Unitário: R$ {{ item.produto.preco.toFixed(2) }}</span>
-                        <span>Valor Total: R$ {{ (item.produto.preco * item.quantidade).toFixed(2) }}</span>
-                    </div>
-                </div>
+                <v-card class="cart-header" elevation="2">
+                    <v-card-title class="headline primary white--text">
+                        <v-icon large color="white" class="mr-2">mdi-cart</v-icon>
+                        Meu Carrinho
+                        <v-spacer></v-spacer>
+                        <span class="text-subtitle-1">{{ cart.length }} {{ cart.length === 1 ? 'item' : 'itens' }}</span>
+                    </v-card-title>
+                </v-card>
             </v-col>
         </v-row>
+
+        <!-- Lista de Produtos -->
         <v-row>
-            <v-col cols="12" class="text-right">
-                <p class="text-h6">Total: R$ {{ total.toFixed(2) }}</p>
-                <v-btn
-                    color="primary"
-                    class="mt-4"
-                    :disabled="cart.length === 0"
-                    @click="showPaymentMethodModal = true"
-                    elevation="2"
-                >
-                    <v-icon left>mdi-cart-check</v-icon>
-                    Finalizar Compra
-                </v-btn>
+            <v-col cols="12" md="8">
+                <v-card v-if="cart.length > 0" class="cart-items" elevation="2">
+                    <v-list>
+                        <v-list-item v-for="item in cart" :key="item.produto.id" class="produto-item">
+                            <v-list-item-avatar tile size="80">
+                                <v-img
+                                    src="https://via.placeholder.com/80"
+                                    alt="Imagem do produto"
+                                ></v-img>
+                            </v-list-item-avatar>
+                            
+                            <v-list-item-content>
+                                <v-list-item-title class="text-h6 mb-1">
+                                    {{ item.produto.nome }}
+                                </v-list-item-title>
+                                
+                                <v-list-item-subtitle>
+                                    <div class="d-flex align-center mt-2">
+                                        <v-btn
+                                            icon
+                                            small
+                                            @click="decrementQuantity(item)"
+                                            :disabled="item.quantidade <= 1"
+                                        >
+                                            <v-icon>mdi-minus</v-icon>
+                                        </v-btn>
+                                        <span class="mx-3 text-body-1">{{ item.quantidade }}</span>
+                                        <v-btn
+                                            icon
+                                            small
+                                            @click="incrementQuantity(item)"
+                                        >
+                                            <v-icon>mdi-plus</v-icon>
+                                        </v-btn>
+                                        <v-divider vertical class="mx-2"></v-divider>
+                                        <v-btn
+                                            icon
+                                            small
+                                            color="error"
+                                            @click="removeFromCart(item)"
+                                            class="remove-btn ml-1"
+                                            style="width: 24px; height: 24px"
+                                        >
+                                            <v-icon x-small>mdi-close</v-icon>
+                                        </v-btn>
+                                    </div>
+                                </v-list-item-subtitle>
+                            </v-list-item-content>
+
+                            <v-list-item-action class="text-right">
+                                <div class="d-flex flex-column align-end">
+                                    <span class="text-body-2 grey--text">Valor un.: R$ {{ item.produto.preco.toFixed(2) }}</span>
+                                    <span class="text-h6 primary--text">R$ {{ (item.produto.preco * item.quantidade).toFixed(2) }}</span>
+                                </div>
+                            </v-list-item-action>
+                        </v-list-item>
+                    </v-list>
+                </v-card>
+                
+                <v-card v-else class="empty-cart text-center pa-6" elevation="2">
+                    <v-icon size="64" color="grey lighten-1">mdi-cart-outline</v-icon>
+                    <h3 class="text-h5 grey--text text--darken-1 mt-4">Seu carrinho está vazio</h3>
+                    <p class="text-body-1 grey--text mt-2">Adicione produtos para continuar suas compras</p>
+                </v-card>
+            </v-col>
+
+            <!-- Resumo do Carrinho -->
+            <v-col cols="12" md="4">
+                <v-card class="cart-summary" elevation="2">
+                    <v-card-title class="headline">
+                        Resumo da Compra
+                    </v-card-title>
+                    
+                    <v-card-text>
+                        <div class="d-flex justify-space-between mb-4">
+                            <span class="text-body-1">Subtotal</span>
+                            <span class="text-body-1">R$ {{ total.toFixed(2) }}</span>
+                        </div>
+                        
+                        <v-divider class="mb-4"></v-divider>
+                        
+                        <div class="d-flex justify-space-between mb-6">
+                            <span class="text-h6">Total</span>
+                            <span class="text-h6 primary--text">R$ {{ total.toFixed(2) }}</span>
+                        </div>
+
+                        <v-btn
+                            block
+                            x-large
+                            color="primary"
+                            :disabled="cart.length === 0"
+                            @click="showPaymentMethodModal = true"
+                            elevation="2"
+                            height="56"
+                        >
+                            <v-icon left>mdi-cart-check</v-icon>
+                            Finalizar Compra
+                        </v-btn>
+                    </v-card-text>
+                </v-card>
             </v-col>
         </v-row>
 
@@ -843,6 +935,20 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+        incrementQuantity(item) {
+            item.quantidade++;
+        },
+        decrementQuantity(item) {
+            if (item.quantidade > 1) {
+                item.quantidade--;
+            }
+        },
+        removeFromCart(item) {
+            const index = this.cart.indexOf(item);
+            if (index > -1) {
+                this.cart.splice(index, 1);
+            }
         }
     },
     beforeDestroy() {
@@ -854,19 +960,42 @@ export default {
 <style>
 .produto-view-container {
     padding: 20px;
-    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
 }
 
-.produto-list {
-    display: flex;
-    flex-direction: column;
+.cart-header {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cart-items {
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .produto-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.2s ease;
+}
+
+.produto-item:last-child {
+    border-bottom: none;
+}
+
+.produto-item:hover {
+    background-color: #f9f9f9;
+}
+
+.cart-summary {
+    border-radius: 8px;
+    position: sticky;
+    top: 20px;
+}
+
+.empty-cart {
+    border-radius: 8px;
+    background-color: #ffffff;
 }
 
 .qr-code-image {
@@ -874,36 +1003,8 @@ export default {
     width: 100%;
     height: auto;
     margin: 0 auto;
-}
-
-.error--text {
-    color: #ff5252 !important;
-}
-
-.success--text {
-    color: #4caf50 !important;
-}
-
-.receipt-content {
-    font-family: 'Courier New', monospace;
-}
-
-.receipt-header {
-    text-align: center;
-}
-
-.receipt-item {
-    margin-bottom: 8px;
-    padding: 4px 0;
-}
-
-.receipt-total {
-    border-top: 1px dashed #ccc;
-    padding-top: 8px;
-}
-
-.receipt-footer {
-    font-style: italic;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .payment-method-modal {
@@ -915,10 +1016,13 @@ export default {
     cursor: pointer;
     border: 2px solid transparent;
     height: 100%;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .payment-option:hover {
     transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .payment-option.selected {
@@ -936,5 +1040,28 @@ export default {
 
 .v-card__text {
     position: relative;
+}
+
+/* Animações */
+.v-enter-active, .v-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.v-enter, .v-leave-to {
+    opacity: 0;
+}
+
+.remove-btn {
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.produto-item:hover .remove-btn {
+    opacity: 1;
 }
 </style>
