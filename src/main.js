@@ -1,34 +1,44 @@
-import { createApp } from 'vue';
-import App from './App.vue';
-import router from './router';
-import BootstrapVue3 from 'bootstrap-vue-3';
-import { createVuetify } from 'vuetify';
-import 'vuetify/styles';
-import * as components from 'vuetify/components';
-import * as directives from 'vuetify/directives';
-import 'vuetify/dist/vuetify.min.css';
-import Toast from 'vue-toastification';
-import 'vue-toastification/dist/index.css';
+// main.js
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import { initializeKeycloak, keycloak } from './auth'
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
-import '@mdi/font/css/materialdesignicons.css';
+import BootstrapVue3 from 'bootstrap-vue-3'
+import { createVuetify } from 'vuetify'
+import 'vuetify/styles'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
+import '@mdi/font/css/materialdesignicons.css'
 
 const vuetify = createVuetify({
   components,
   directives,
-  theme: {
-    dark: true,
-  },
-  icons: {
-    defaultSet: 'mdi',
-  },
-});
+  theme: { dark: true },
+  icons: { defaultSet: 'mdi' }
+})
 
-const app = createApp(App);
+initializeKeycloak().then(() => {
+  console.log('Token:', keycloak.tokenParsed)
+  console.log('Roles:', keycloak.tokenParsed?.realm_access?.roles)
 
-app.use(router);
-app.use(vuetify);
-app.use(Toast);
-app.use(BootstrapVue3);
-app.mount('#app');
+  const app = createApp(App)
+  app.use(router)
+  app.use(vuetify)
+  app.use(BootstrapVue3)
+  app.mount('#app')
+
+  // Redirecionamento manual após login
+  const roles = keycloak.tokenParsed?.realm_access?.roles || []
+  if (window.location.pathname === '/' || window.location.pathname === '/login') {
+    if (roles.includes('admin')) {
+      router.replace('/produto')
+    } else if (roles.includes('Mercado')) {
+      router.replace('/mercadinho')
+    } else {
+      router.replace('/unauthorized') // ou outra página padrão
+    }
+  }
+})
