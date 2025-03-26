@@ -25,17 +25,188 @@
         </v-row>
         <v-row>
             <v-col cols="12" class="text-right">
-                <p>Total: R$ {{ total.toFixed(2) }}</p>
+                <p class="text-h6">Total: R$ {{ total.toFixed(2) }}</p>
                 <v-btn
                     color="primary"
                     class="mt-4"
                     :disabled="cart.length === 0"
-                    @click="finalizarCompra"
+                    @click="showPaymentMethodModal = true"
+                    elevation="2"
                 >
+                    <v-icon left>mdi-cart-check</v-icon>
                     Finalizar Compra
                 </v-btn>
             </v-col>
         </v-row>
+
+        <!-- Modal de Seleção de Método de Pagamento -->
+        <v-dialog v-model="showPaymentMethodModal" max-width="800" persistent>
+            <v-card class="payment-method-modal">
+                <v-card-title class="headline primary white--text pa-4">
+                    <v-icon color="white" class="mr-2">mdi-credit-card-multiple</v-icon>
+                    Escolha a Forma de Pagamento
+                    <v-spacer></v-spacer>
+                    <v-btn icon @click="showPaymentMethodModal = false" dark>
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+
+                <v-card-text class="pa-6">
+                    <v-row>
+                        <v-col cols="12">
+                            <div class="text-h6 mb-4">Valor Total: <span class="primary--text">R$ {{ total ? total.toFixed(2) : '0.00' }}</span></div>
+                        </v-col>
+                    </v-row>
+
+                    <v-row>
+                        <v-col cols="12" md="4">
+                            <v-card 
+                                class="payment-option" 
+                                :class="{ 'selected': selectedPaymentMethod === 'credit' }"
+                                @click="selectPaymentMethod('credit')"
+                                elevation="2"
+                                hover
+                            >
+                                <v-card-text class="text-center pa-6">
+                                    <v-icon size="48" :color="selectedPaymentMethod === 'credit' ? 'primary' : ''">
+                                        mdi-credit-card
+                                    </v-icon>
+                                    <div class="text-h6 mt-4">Cartão de Crédito</div>
+                                    <div class="text-caption">Parcele em até 12x</div>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+
+                        <v-col cols="12" md="4">
+                            <v-card 
+                                class="payment-option" 
+                                :class="{ 'selected': selectedPaymentMethod === 'debit' }"
+                                @click="selectPaymentMethod('debit')"
+                                elevation="2"
+                                hover
+                            >
+                                <v-card-text class="text-center pa-6">
+                                    <v-icon size="48" :color="selectedPaymentMethod === 'debit' ? 'primary' : ''">
+                                        mdi-credit-card-outline
+                                    </v-icon>
+                                    <div class="text-h6 mt-4">Cartão de Débito</div>
+                                    <div class="text-caption">Débito à vista</div>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+
+                        <v-col cols="12" md="4">
+                            <v-card 
+                                class="payment-option" 
+                                :class="{ 'selected': selectedPaymentMethod === 'pix' }"
+                                @click="selectPaymentMethod('pix')"
+                                elevation="2"
+                                hover
+                            >
+                                <v-card-text class="text-center pa-6">
+                                    <v-icon size="48" :color="selectedPaymentMethod === 'pix' ? 'primary' : ''">
+                                        mdi-qrcode
+                                    </v-icon>
+                                    <div class="text-h6 mt-4">PIX</div>
+                                    <div class="text-caption">Pagamento instantâneo</div>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+
+                    <!-- Opções de Parcelamento para Cartão de Crédito -->
+                    <v-expand-transition>
+                        <div v-if="selectedPaymentMethod === 'credit'" class="mt-6">
+                            <v-divider class="mb-4"></v-divider>
+                            <div class="text-h6 mb-4">Selecione o número de parcelas:</div>
+                            <v-row>
+                                <v-col cols="12" sm="6">
+                                    <v-select
+                                        v-model="selectedInstallment"
+                                        :items="installmentOptions"
+                                        label="Selecione o número de parcelas"
+                                        outlined
+                                        dense
+                                        return-object
+                                    >
+                                        <template v-slot:selection="{ item }">
+                                            {{ item.label }}
+                                            <v-chip
+                                                v-if="item.recomendado"
+                                                color="success"
+                                                x-small
+                                                class="ml-2"
+                                            >
+                                                Recomendado
+                                            </v-chip>
+                                        </template>
+                                        <template v-slot:item="{ item }">
+                                            <v-list-item>
+                                                <v-list-item-content>
+                                                    <v-list-item-title>
+                                                        {{ item.label }}
+                                                        <v-chip
+                                                            v-if="item.recomendado"
+                                                            color="success"
+                                                            x-small
+                                                            class="ml-2"
+                                                        >
+                                                            Recomendado
+                                                        </v-chip>
+                                                    </v-list-item-title>
+                                                    <v-list-item-subtitle>
+                                                        Total: R$ {{ (item.valorTotal || 0).toFixed(2) }} ({{ item.taxa }}% de juros)
+                                                    </v-list-item-subtitle>
+                                                </v-list-item-content>
+                                            </v-list-item>
+                                        </template>
+                                    </v-select>
+                                </v-col>
+                            </v-row>
+                        </div>
+                    </v-expand-transition>
+
+                    <!-- Mensagem para passar o cartão -->
+                    <v-expand-transition>
+                        <div v-if="selectedPaymentMethod === 'credit' || selectedPaymentMethod === 'debit'" class="mt-6">
+                            <v-divider class="mb-4"></v-divider>
+                            <v-alert
+                                type="info"
+                                border="{ left: true }"
+                                colored-border
+                                elevation="2"
+                                class="mb-4"
+                            >
+                                <v-icon left>mdi-credit-card-scan</v-icon>
+                                Após clicar em "Confirmar Pagamento", passe o cartão na maquininha
+                            </v-alert>
+                        </div>
+                    </v-expand-transition>
+                </v-card-text>
+
+                <v-divider></v-divider>
+
+                <v-card-actions class="pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        text
+                        @click="showPaymentMethodModal = false"
+                        class="mr-4"
+                    >
+                        Cancelar
+                    </v-btn>
+                    <v-btn
+                        color="primary"
+                        :disabled="!isPaymentMethodValid"
+                        @click="processPayment"
+                        elevation="2"
+                    >
+                        <v-icon left>mdi-check</v-icon>
+                        {{ paymentButtonText }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
 
         <!-- Modal de Pagamento PIX -->
         <v-dialog v-model="showPaymentModal" max-width="500">
@@ -267,6 +438,9 @@ export default {
             showErrorModal: false,
             showSuccessModal: false,
             showReceiptModal: false,
+            showPaymentMethodModal: false,
+            selectedPaymentMethod: null,
+            selectedInstallment: null,
             errorMessages: {
                 // Erros de Fraude
                 'cc_rejected_blacklist': 'Pagamento recusado por suspeita de fraude (cartão na lista negra)',
@@ -353,6 +527,78 @@ export default {
         getErrorMessage() {
             if (!this.paymentStatus?.status_detail) return 'Erro desconhecido no pagamento';
             return this.errorMessages[this.paymentStatus.status_detail] || 'Erro no processamento do pagamento';
+        },
+        installmentOptions() {
+            if (!this.total || this.total <= 0) return [];
+            
+            const options = [];
+            const maxInstallments = 12;
+            const minInstallmentValue = 5;
+
+            // Taxas do Mercado Pago Point (aproximadas)
+            const taxas = {
+                debito: 1.99, // 1.99% para débito
+                credito: {
+                    1: 3.79, // 3.79% à vista
+                    2: 5.99, // 5.99% parcelado
+                    3: 6.99,
+                    4: 7.99,
+                    5: 8.99,
+                    6: 9.99,
+                    7: 10.99,
+                    8: 11.99,
+                    9: 12.99,
+                    10: 13.99,
+                    11: 14.99,
+                    12: 15.99
+                }
+            };
+
+            // Opção à vista com desconto
+            const valorAVista = this.total * (1 + taxas.credito[1] / 100);
+            options.push({
+                value: 1,
+                label: `1x de R$ ${valorAVista.toFixed(2)} à vista`,
+                taxa: taxas.credito[1],
+                valorParcela: valorAVista,
+                valorTotal: valorAVista,
+                recomendado: true
+            });
+
+            // Calcula as parcelas
+            for (let i = 2; i <= maxInstallments; i++) {
+                const taxa = taxas.credito[i];
+                const valorTotal = this.total * (1 + taxa / 100);
+                const valorParcela = valorTotal / i;
+
+                if (valorParcela >= minInstallmentValue) {
+                    options.push({
+                        value: i,
+                        label: `${i}x de R$ ${valorParcela.toFixed(2)} (total: R$ ${valorTotal.toFixed(2)}, juros: ${taxa}%)`,
+                        taxa: taxa,
+                        valorParcela: valorParcela,
+                        valorTotal: valorTotal,
+                        recomendado: (i === 2 && this.total < 1000) || 
+                                    (i === 3 && this.total >= 1000 && this.total < 2000) ||
+                                    (i === 6 && this.total >= 2000)
+                    });
+                }
+            }
+
+            return options;
+        },
+        isPaymentMethodValid() {
+            return this.selectedPaymentMethod !== null && 
+                   (this.selectedPaymentMethod === 'pix' || 
+                    this.selectedPaymentMethod === 'credit' || 
+                    this.selectedPaymentMethod === 'debit');
+        },
+        paymentButtonText() {
+            if (this.selectedPaymentMethod === 'pix') {
+                return 'Gerar QR Code PIX';
+            } else {
+                return 'Passar Cartão na Maquininha';
+            }
         }
     },
     methods: {
@@ -550,6 +796,53 @@ export default {
                 hour: '2-digit',
                 minute: '2-digit'
             });
+        },
+        selectPaymentMethod(method) {
+            this.selectedPaymentMethod = method;
+            if (method === 'debit') {
+                this.selectedInstallment = 1;
+            }
+        },
+        async processPayment() {
+            try {
+                this.loading = true;
+                
+                if (this.selectedPaymentMethod === 'pix') {
+                    await this.finalizarCompra();
+                } else {
+                    // Preparar dados para envio
+                    const paymentData = {
+                        products: {},
+                        paymentMethod: this.selectedPaymentMethod,
+                        installments: this.selectedPaymentMethod === 'credit' ? this.selectedInstallment?.value || 1 : 1
+                    };
+
+                    // Adicionar produtos
+                    this.cart.forEach(item => {
+                        paymentData.products[item.produto.id] = {
+                            quantity: item.quantidade
+                        };
+                    });
+
+                    // Enviar para processamento na maquininha
+                    const response = await PagamentoRepository.ProcessCardPayment(paymentData);
+                    
+                    if (response.data.status === 'approved') {
+                        this.paymentStatus = response.data;
+                        this.showSuccessModal = true;
+                    } else {
+                        this.paymentStatus = response.data;
+                        this.showErrorModal = true;
+                    }
+                }
+                
+                this.showPaymentMethodModal = false;
+            } catch (error) {
+                console.error('Erro ao processar pagamento:', error);
+                this.showErrorModal = true;
+            } finally {
+                this.loading = false;
+            }
         }
     },
     beforeDestroy() {
@@ -611,5 +904,37 @@ export default {
 
 .receipt-footer {
     font-style: italic;
+}
+
+.payment-method-modal {
+    border-radius: 8px;
+}
+
+.payment-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    height: 100%;
+}
+
+.payment-option:hover {
+    transform: translateY(-4px);
+}
+
+.payment-option.selected {
+    border-color: var(--v-primary-base);
+    background-color: var(--v-primary-lighten5);
+}
+
+.payment-option .v-icon {
+    transition: all 0.3s ease;
+}
+
+.payment-option:hover .v-icon {
+    transform: scale(1.1);
+}
+
+.v-card__text {
+    position: relative;
 }
 </style>
