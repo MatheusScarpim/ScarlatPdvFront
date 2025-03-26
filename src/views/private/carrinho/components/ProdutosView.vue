@@ -1,5 +1,13 @@
 <template>
     <v-container class="produto-view-container">
+        <!-- Leitor de Código de Barras Invisível -->
+        <div style="height: 0; overflow: hidden; position: absolute;">
+            <StreamBarcodeReader
+                @decode="onDecode"
+                @loaded="onLoaded"
+            />
+        </div>
+
         <v-row v-if="loading">
             <v-col cols="12" class="text-center">
                 <v-progress-circular indeterminate color="primary"></v-progress-circular>
@@ -204,6 +212,24 @@
                                 </v-card-text>
                             </v-card>
                         </v-col>
+
+                        <v-col cols="12" md="4">
+                            <v-card 
+                                class="payment-option" 
+                                :class="{ 'selected': selectedPaymentMethod === 'cash' }"
+                                @click="selectPaymentMethod('cash')"
+                                elevation="2"
+                                hover
+                            >
+                                <v-card-text class="text-center pa-6">
+                                    <v-icon size="48" :color="selectedPaymentMethod === 'cash' ? 'primary' : ''">
+                                        mdi-cash
+                                    </v-icon>
+                                    <div class="text-h6 mt-4">Dinheiro</div>
+                                    <div class="text-caption">Pagamento em espécie</div>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
                     </v-row>
 
                     <!-- Opções de Parcelamento para Cartão de Crédito -->
@@ -253,6 +279,58 @@
                                             </v-list-item>
                                         </template>
                                     </v-select>
+                                </v-col>
+                            </v-row>
+                        </div>
+                    </v-expand-transition>
+
+                    <!-- Interface de Pagamento em Dinheiro -->
+                    <v-expand-transition>
+                        <div v-if="selectedPaymentMethod === 'cash'" class="mt-6">
+                            <v-divider class="mb-4"></v-divider>
+                            <div class="text-h6 mb-4">Pagamento em Dinheiro</div>
+                            
+                            <v-row>
+                                <v-col cols="12" md="6">
+                                    <v-text-field
+                                        v-model="cashPayment.receivedAmount"
+                                        label="Valor Recebido"
+                                        prefix="R$"
+                                        type="number"
+                                        outlined
+                                        dense
+                                        @input="calculateChange"
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field
+                                        v-model="cashPayment.change"
+                                        label="Troco"
+                                        prefix="R$"
+                                        readonly
+                                        outlined
+                                        dense
+                                        :color="cashPayment.change >= 0 ? 'success' : 'error'"
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+
+                            <v-row>
+                                <v-col cols="12">
+                                    <div class="text-subtitle-1 mb-2">Notas Recebidas:</div>
+                                    <v-row>
+                                        <v-col cols="6" sm="3" v-for="(count, note) in cashPayment.notes" :key="note">
+                                            <v-text-field
+                                                v-model="cashPayment.notes[note]"
+                                                :label="`R$ ${note}`"
+                                                type="number"
+                                                min="0"
+                                                outlined
+                                                dense
+                                                @input="calculateTotalReceived"
+                                            ></v-text-field>
+                                        </v-col>
+                                    </v-row>
                                 </v-col>
                             </v-row>
                         </div>
@@ -510,9 +588,13 @@
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
 import PagamentoRepository from '@/shared/http/repositories/pagamento/pagamento';
 import html2pdf from 'html2pdf.js';
+import { StreamBarcodeReader } from "vue-barcode-reader";
 
 export default {
     name: 'ProdutoView',
+    components: {
+        StreamBarcodeReader
+    },
     data() {
         return {
             produtos: [],
@@ -552,6 +634,23 @@ export default {
                 'cc_rejected_bad_filled_date': 'Data de validade do cartão inválida',
                 'cc_rejected_bad_filled_security_code': 'Código de segurança do cartão inválido',
                 'cc_rejected_bad_filled_other': 'Dados do cartão preenchidos incorretamente'
+            },
+            inputBuffer: '', // Para leitura do teclado
+            lastKeyTime: Date.now(),
+            keyTimeout: 100, // Tempo limite entre teclas em ms
+            cashPayment: {
+                receivedAmount: 0,
+                change: 0,
+                notes: {
+                    200: 0,
+                    100: 0,
+                    50: 0,
+                    20: 0,
+                    10: 0,
+                    5: 0,
+                    2: 0,
+                    1: 0
+                }
             }
         };
     },
@@ -680,6 +779,9 @@ export default {
             return options;
         },
         isPaymentMethodValid() {
+            if (this.selectedPaymentMethod === 'cash') {
+                return this.cashPayment.receivedAmount >= this.total;
+            }
             return this.selectedPaymentMethod !== null && 
                    (this.selectedPaymentMethod === 'pix' || 
                     this.selectedPaymentMethod === 'credit' || 
@@ -893,6 +995,21 @@ export default {
             this.selectedPaymentMethod = method;
             if (method === 'debit') {
                 this.selectedInstallment = 1;
+            } else if (method === 'cash') {
+                this.cashPayment = {
+                    receivedAmount: 0,
+                    change: 0,
+                    notes: {
+                        200: 0,
+                        100: 0,
+                        50: 0,
+                        20: 0,
+                        10: 0,
+                        5: 0,
+                        2: 0,
+                        1: 0
+                    }
+                };
             }
         },
         async processPayment() {
@@ -949,10 +1066,105 @@ export default {
             if (index > -1) {
                 this.cart.splice(index, 1);
             }
+        },
+        onDecode(result) {
+            this.handleBarcode(result);
+        },
+        onLoaded() {
+            console.log('Leitor de código de barras carregado');
+        },
+        handleBarcode(barcode) {
+            // Processa o código de barras lido
+            this.getProdutoByBarcode(barcode);
+        },
+        async getProdutoByBarcode(barcode) {
+            this.loading = true;
+            const filter = { params: { codBarra: barcode } };
+            try {
+                const response = await ProdutoRepository.GetAll(filter);
+                if (response.data.content && response.data.content.length > 0) {
+                    const produto = response.data.content[0];
+                    this.addToCart(produto);
+                    this.playBeepSound();
+                }
+            } catch (error) {
+                console.error('Erro ao buscar produto:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        playBeepSound() {
+            try {
+                // Criar o elemento de áudio
+                const audio = new Audio();
+                audio.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU' + 
+                           'tvT19AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//8=';
+                
+                // Configurar o som do beep
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = context.createOscillator();
+                const gainNode = context.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(context.destination);
+
+                // Configurar as propriedades do som
+                oscillator.type = 'square'; // Tipo de onda mais apropriado para beep
+                oscillator.frequency.setValueAtTime(1800, context.currentTime); // Frequência mais alta
+                gainNode.gain.setValueAtTime(0.25, context.currentTime); // Volume moderado
+
+                // Tocar o beep
+                oscillator.start(context.currentTime);
+                oscillator.stop(context.currentTime + 0.1); // Duração de 100ms
+
+                // Limpar recursos
+                setTimeout(() => {
+                    context.close();
+                }, 200);
+            } catch (error) {
+                console.error('Erro ao tocar o beep:', error);
+            }
+        },
+        handleKeyPress(event) {
+            const currentTime = Date.now();
+            
+            // Se passou muito tempo desde a última tecla, limpa o buffer
+            if (currentTime - this.lastKeyTime > this.keyTimeout) {
+                this.inputBuffer = '';
+            }
+            
+            // Atualiza o tempo da última tecla
+            this.lastKeyTime = currentTime;
+            
+            // Adiciona a tecla ao buffer
+            if (event.key !== 'Enter') {
+                this.inputBuffer += event.key;
+            } else if (this.inputBuffer) {
+                // Quando Enter é pressionado e há dados no buffer
+                this.handleBarcode(this.inputBuffer);
+                this.inputBuffer = '';
+            }
+        },
+        calculateChange() {
+            this.cashPayment.change = this.cashPayment.receivedAmount - this.total;
+        },
+        calculateTotalReceived() {
+            let total = 0;
+            for (const [note, count] of Object.entries(this.cashPayment.notes)) {
+                total += Number(note) * Number(count);
+            }
+            this.cashPayment.receivedAmount = total;
+            this.calculateChange();
         }
     },
+    mounted() {
+        // Adiciona listener para capturar entrada do teclado (leitor físico)
+        document.addEventListener('keypress', this.handleKeyPress);
+    },
     beforeDestroy() {
-        this.stopStatusCheck(); // Limpa o intervalo quando o componente é destruído
+        this.stopStatusCheck();
+        // Remove o listener quando o componente é destruído
+        document.removeEventListener('keypress', this.handleKeyPress);
     }
 };
 </script>
