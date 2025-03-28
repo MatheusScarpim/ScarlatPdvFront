@@ -1,13 +1,5 @@
 <template>
     <v-container class="produto-view-container">
-        <!-- Leitor de Código de Barras Invisível -->
-        <div style="height: 0; overflow: hidden; position: absolute;">
-            <StreamBarcodeReader
-                @decode="onDecode"
-                @loaded="onLoaded"
-            />
-        </div>
-
         <v-row v-if="loading">
             <v-col cols="12" class="text-center">
                 <v-progress-circular indeterminate color="primary"></v-progress-circular>
@@ -610,12 +602,10 @@
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
 import PagamentoRepository from '@/shared/http/repositories/pagamento/pagamento';
 import html2pdf from 'html2pdf.js';
-import { StreamBarcodeReader } from "vue-barcode-reader";
 
 export default {
     name: 'ProdutoView',
     components: {
-        StreamBarcodeReader
     },
     data() {
         return {
