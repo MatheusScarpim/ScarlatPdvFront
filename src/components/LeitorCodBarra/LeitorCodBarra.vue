@@ -5,7 +5,7 @@
                 <v-btn @click="toggleMode" class="ma-2">{{ isTyping ? 'Usar Leitor' : 'Digitar Código' }}</v-btn>
             </v-col>
         </v-row>
-        <div class="hidden-barcode-reader">
+        <div class="barcode-reader" v-if="false">
             <StreamBarcodeReader @decode="onBarcodeRead" :options="{ video: { facingMode: 'environment' } }" />
         </div>
         <v-dialog v-model="dialog" max-width="400">
@@ -36,39 +36,50 @@ export default {
             barcode: null,
             barcodeInput: '',
             isTyping: false,
-            isReading: false, // Variável de controle
-            dialog: false, // Controle do dialog
+            isReading: false,
+            dialog: false,
+            inputBuffer: '',
         };
     },
     watch: {
         dialog(val) {
             if (!val) {
-                this.isTyping = false; // Volta para o leitor quando o dialog é fechado
+                this.isTyping = false;
             }
         }
+    },
+    mounted() {
+        window.addEventListener('keydown', this.handleKeydown);
+    },
+    beforeDestroy() {
+        window.removeEventListener('keydown', this.handleKeydown);
     },
     methods: {
         toggleMode() {
             this.isTyping = !this.isTyping;
-            this.dialog = this.isTyping; // Abre o dialog se estiver digitando
+            this.dialog = this.isTyping;
         },
         closeDialog() {
+            if (this.barcodeInput) {
+                this.onBarcodeRead(this.barcodeInput);
+            }
             this.dialog = false;
         },
         onBarcodeRead(barcode) {
-            if (this.isReading) return; // Bloqueia a leitura se já estiver lendo
+            if (this.isReading) return;
 
-            this.isReading = true; // Define como lendo
+            this.isReading = true;
             this.barcode = barcode;
-            this.dialog = false; // Fecha o dialog
+            this.dialog = false;
             this.$emit('barcode-read', barcode);
             this.playBeep();
             this.showToast(`Código de barras lido: ${barcode}`);
             setTimeout(() => {
                 this.barcode = null;
                 this.barcodeInput = '';
-                this.isReading = false; // Libera a leitura após 3 segundos
-            }, 3000); // Bloqueia a leitura por 3 segundos
+                this.isReading = false;
+                this.inputBuffer = '';
+            }, 1000);
         },
         playBeep() {
             const context = new (window.AudioContext || window.webkitAudioContext)();
@@ -86,9 +97,21 @@ export default {
             const toast = useToast();
             toast.success(message, {
                 position: "top-right",
-                timeout: 1300, // Tempo da notificação reduzido
+                timeout: 1300,
             });
         },
+        handleKeydown(event) {
+            if (!this.isTyping && !this.dialog) {
+                const validKeys = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]$/;
+                if (validKeys.test(event.key)) {
+                    this.inputBuffer += event.key;
+                }
+                if (event.key === 'Enter' && this.inputBuffer) {
+                    console.log('Enter key pressed:', this.inputBuffer);
+                    this.onBarcodeRead(this.inputBuffer);
+                }
+            }
+        }
     },
 };
 </script>
@@ -99,12 +122,17 @@ export default {
     font-family: Arial, sans-serif;
 }
 
-.hidden-barcode-reader {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
+.barcode-reader {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.barcode-reader video {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 </style>

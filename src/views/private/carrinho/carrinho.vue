@@ -27,7 +27,7 @@ export default {
             this.barcode = barcode;
             setTimeout(() => {
                 this.barcode = null;
-            }, 2000); 
+            }, 1000); 
         },
     },
 };

@@ -9,9 +9,10 @@ import { createVuetify } from 'vuetify'
 import 'vuetify/styles'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
-import '@mdi/font/css/materialdesignicons.css'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+import './assets/style.css';
+import '@mdi/font/css/materialdesignicons.css';
 
 const vuetify = createVuetify({
   components,

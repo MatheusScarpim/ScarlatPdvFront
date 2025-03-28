@@ -1,0 +1,14 @@
+:root {
+    --cor-fundo: #0078f1;       /* Cor de fundo principal */
+    --cor-texto: #333333;       /* Cor do texto */
+    --cor-titulo: #007bff;      /* Cor dos títulos */
+    --cor-botao: #28a745;       /* Cor dos botões */
+    --cor-navbar-fundo: #0056b3; /* Cor de fundo da navbar (azul escuro) */
+    --cor-sidebar-fundo: #003366; /* Cor de fundo da sidebar (azul escuro) */
+    --cor-sidebar-texto: #ffffff; /* Cor do texto da sidebar (branco) */
+    --cor-navbar-texto: #ffffff;  /* Cor do texto da navbar (branco) */
+    --cor-navbar-link: #ffc107;   /* Cor dos links da navbar (amarelo) */
+    --cor-hover-link: #ffcc00;    /* Cor de hover nos links (amarelo mais forte) */
+    --cor-hover-sidebar: #004080; /* Cor de hover na sidebar (azul mais claro) */
+    --cor-hover-botao: #218838;   /* Cor de hover nos botões (verde mais escuro) */
+}
