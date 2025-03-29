@@ -1,5 +1,13 @@
 <template>
     <v-container class="produto-view-container">
+        <!-- Leitor de Código de Barras Invisível -->
+        <div style="height: 0; overflow: hidden; position: absolute;">
+            <StreamBarcodeReader
+                @decode="onDecode"
+                @loaded="onLoaded"
+            />
+        </div>
+
         <v-row v-if="loading">
             <v-col cols="12" class="text-center">
                 <v-progress-circular indeterminate color="primary"></v-progress-circular>
@@ -473,10 +481,14 @@
                         elevation="2"
                         class="mb-4"
                     >
-                        {{ getErrorMessage }}
+                        {{ paymentStatus?.message || 'Erro desconhecido no pagamento' }}
                     </v-alert>
-                    <p class="text-subtitle-1 mb-2">Código do erro:</p>
-                    <p class="text-body-2">{{ paymentStatus?.status_detail || 'Código não disponível' }}</p>
+                    <p class="text-subtitle-1 mb-2">Estado do pagamento:</p>
+                    <p class="text-body-2">{{ paymentStatus?.status || 'Não disponível' }}</p>
+                    <template v-if="paymentStatus?.status_detail">
+                        <p class="text-subtitle-1 mb-2 mt-4">Detalhes:</p>
+                        <p class="text-body-2">{{ paymentStatus.status_detail }}</p>
+                    </template>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -573,6 +585,24 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- Modal de Carregamento do Pagamento -->
+        <v-dialog v-model="showLoadingModal" persistent max-width="400">
+            <v-card>
+                <v-card-text class="text-center pa-6">
+                    <v-progress-circular
+                        indeterminate
+                        size="64"
+                        color="primary"
+                        class="mb-4"
+                    ></v-progress-circular>
+                    <div class="text-h6 mb-2">Processando Pagamento</div>
+                    <div class="text-body-2 grey--text">
+                        Por favor, aguarde enquanto processamos seu pagamento...
+                    </div>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
 
@@ -580,10 +610,12 @@
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
 import PagamentoRepository from '@/shared/http/repositories/pagamento/pagamento';
 import html2pdf from 'html2pdf.js';
+import { StreamBarcodeReader } from "vue-barcode-reader";
 
 export default {
     name: 'ProdutoView',
     components: {
+        StreamBarcodeReader
     },
     data() {
         return {
@@ -641,6 +673,19 @@ export default {
                     2: 0,
                     1: 0
                 }
+            },
+            showLoadingModal: false,
+            paymentStates: {
+                APPROVED: 'approved',
+                rejected: 'rejected',
+                CANCELED: 'canceled',
+                EXPIRED: 'expired'
+            },
+            paymentStateMessages: {
+                APPROVED: 'Pagamento aprovado com sucesso!',
+                rejected: 'Pagamento rejeitado',
+                CANCELED: 'Pagamento cancelado',
+                EXPIRED: 'Pagamento expirado'
             }
         };
     },
@@ -1005,18 +1050,19 @@ export default {
         async processPayment() {
             try {
                 this.loading = true;
+                this.showLoadingModal = true;
                 
                 if (this.selectedPaymentMethod === 'pix') {
                     await this.finalizarCompra();
                 } else {
-                    // Preparar dados para envio
+                    // Preparar dados para envio no formato correto
                     const paymentData = {
-                        products: {},
-                        paymentMethod: this.selectedPaymentMethod,
-                        installments: this.selectedPaymentMethod === 'credit' ? this.selectedInstallment?.value || 1 : 1
+                        mercadinho_id: 1,
+                        payment_type: this.selectedPaymentMethod,
+                        products: {}
                     };
 
-                    // Adicionar produtos
+                    // Adicionar produtos no formato correto
                     this.cart.forEach(item => {
                         paymentData.products[item.produto.id] = {
                             quantity: item.quantidade
@@ -1026,21 +1072,39 @@ export default {
                     // Enviar para processamento na maquininha
                     const response = await PagamentoRepository.ProcessCardPayment(paymentData);
                     
-                    if (response.data.status === 'approved') {
-                        this.paymentStatus = response.data;
-                        this.showSuccessModal = true;
-                    } else {
-                        this.paymentStatus = response.data;
-                        this.showErrorModal = true;
+                    // Atualizar status do pagamento com os dados retornados
+                    this.paymentStatus = {
+                        ...response.data.payment,
+                        message: this.errorMessages[response.data.payment.status_detail] || response.data.message
+                    };
+
+                    // Tratar diferentes estados do pagamento
+                    switch (response.data.payment.status) {
+                        case 'approved':
+                            this.showSuccessModal = true;
+                            break;
+                        case 'rejected':
+                        case 'cancelled':
+                        case 'expired':
+                            this.showErrorModal = true;
+                            break;
+                        default:
+                            this.showErrorModal = true;
                     }
                 }
                 
                 this.showPaymentMethodModal = false;
             } catch (error) {
                 console.error('Erro ao processar pagamento:', error);
+                this.paymentStatus = {
+                    status: 'error',
+                    message: error.response?.data?.message || 'Erro ao processar pagamento',
+                    state: error.response?.data?.payment?.status || 'Erro'
+                };
                 this.showErrorModal = true;
             } finally {
                 this.loading = false;
+                this.showLoadingModal = false;
             }
         },
         incrementQuantity(item) {
