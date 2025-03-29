@@ -1,87 +1,96 @@
+<!-- src/components/ArmazemList.vue -->
 <template>
-    <div>
-        <v-data-table :headers="headers" :items="armazens" :options.sync="options"
-            :server-items-length="totalArmazens" :loading="loading"
-            :footer-props="{ 'items-per-page-text': 'Itens por página' }" class="elevation-1">
-            <template v-slot:top>
-                <v-toolbar flat>
-                    <v-toolbar-title>Lista de Armazens</v-toolbar-title>
-                    <v-divider class="mx-4" inset vertical></v-divider>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchArmazens">Atualizar</v-btn>
-                </v-toolbar>
-            </template>
-        </v-data-table>
-
-        <!-- Modal de Adicionar Fornecedor -->
-        <ArmazemAdd v-model:dialog="dialog" @close-modal="closeModal" />
-    </div>
+  <v-container>
+    <v-card>
+      <v-card-title>
+        <v-spacer></v-spacer>
+        <v-btn color="primary" @click="addWarehouseDialog = true">
+          <v-icon left>mdi-plus</v-icon>
+          Novo Armazém
+        </v-btn>
+      </v-card-title>
+      <armazem-table
+        :warehouses="warehouses"
+        @add-product="openAddDialog"
+        @view-products="openViewDialog"
+      />
+      <add-product-dialog
+        v-model="addDialog"
+        :warehouse="selectedWarehouse"
+        @product-added="updateWarehouse"
+      />
+      <view-products-dialog
+        v-model="viewDialog"
+        :warehouse="selectedWarehouse"
+      />
+      <add-warehouse-dialog
+        v-model="addWarehouseDialog"
+        @warehouse-added="addNewWarehouse"
+      />
+    </v-card>
+  </v-container>
 </template>
 
 <script>
-import axios from 'axios';
-import ArmazemAdd from './ArmazemAdd.vue';
+import ArmazemTable from './ArmazemTable.vue';
+import AddProductDialog from './AddProductDialog.vue';
+import ViewProductsDialog from './ViewProductsDialog.vue';
+import AddWarehouseDialog from './AddWarehouseDialog.vue';
 
 export default {
-    components: {
-        ArmazemAdd,
+  name: 'ArmazemList',
+  components: {
+    ArmazemTable,
+    AddProductDialog,
+    ViewProductsDialog,
+    AddWarehouseDialog,
+  },
+  data() {
+    return {
+      warehouses: [
+        { id: 1, name: 'Armazém Central', location: 'São Paulo', products: [], productCount: 0 },
+        { id: 2, name: 'Armazém Norte', location: 'Manaus', products: [], productCount: 0 },
+        { id: 3, name: 'Armazém Sul', location: 'Porto Alegre', products: [], productCount: 0 },
+      ],
+      addDialog: false,
+      viewDialog: false,
+      addWarehouseDialog: false,
+      selectedWarehouse: null,
+    };
+  },
+  methods: {
+    openAddDialog(warehouse) {
+      this.selectedWarehouse = warehouse;
+      this.addDialog = true;
     },
-    data() {
-        return {
-            dialog: false, // Estado da modal
-            armazens: [{ id: 1, nome: 'Fornecedor 1', email: 'pedr', telefone: '001' },
-            { id: 2, nome: 'Fornecedor 2', email: 'math', telefone: '002' }
-            ]
-            ,
-            totalArmazens: 0,
-            options: {
-                page: 1,
-                itemsPerPage: 5,
-                sortBy: [],
-                sortDesc: [],
-            },
-            loading: false,
-        };
+    openViewDialog(warehouse) {
+      this.selectedWarehouse = warehouse;
+      this.viewDialog = true;
     },
-    watch: {
-        options: {
-            handler() {
-                this.fetchArmazens();
-            },
-            deep: true,
-        },
+    updateWarehouse(newProduct) {
+      if (this.selectedWarehouse && newProduct.name && newProduct.quantity) {
+        this.selectedWarehouse.products.push(newProduct);
+        this.selectedWarehouse.productCount = this.selectedWarehouse.products.length;
+      }
     },
-    methods: {
-        async fetchArmazens() {
-            this.loading = true;
-            try {
-                const { page, itemsPerPage, sortBy, sortDesc } = this.options;
-                const response = await axios.get('https://api.exemplo.com/armazens', {
-                    params: {
-                        page,
-                        itemsPerPage,
-                        sortBy: sortBy[0],
-                        sortDesc: sortDesc[0],
-                    },
-                });
-                this.armazens = response.data.items;
-                this.totalArmazens = response.data.total;
-            } catch (error) {
-                console.error('Erro ao buscar armazens:', error);
-            } finally {
-                this.loading = false;
-            }
-        },
-        openModal() {
-            this.dialog = true;
-        },
-        closeModal() {
-            this.dialog = false;
-        },
+    addNewWarehouse(newWarehouse) {
+      if (newWarehouse.name && newWarehouse.location) {
+        const newId = this.warehouses.length + 1;
+        this.warehouses.push({
+          id: newId,
+          name: newWarehouse.name,
+          location: newWarehouse.location,
+          products: [],
+          productCount: 0,
+        });
+      }
     },
-    mounted() {
-        this.fetchArmazens();
-    },
+  },
 };
 </script>
+
+<style scoped>
+.v-container {
+  padding: 20px;
+}
+</style>
