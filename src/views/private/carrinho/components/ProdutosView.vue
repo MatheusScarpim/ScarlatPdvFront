@@ -699,6 +699,7 @@ export default {
         codBarra: {
             handler() {
                 if(this.codBarra) {
+                    console.log(this.codBarra)
                     this.getProdutoByCodBarra();
                 }
             }
@@ -1210,15 +1211,6 @@ export default {
             this.cashPayment.receivedAmount = total;
             this.calculateChange();
         }
-    },
-    mounted() {
-        // Adiciona listener para capturar entrada do teclado (leitor físico)
-        document.addEventListener('keypress', this.handleKeyPress);
-    },
-    beforeDestroy() {
-        this.stopStatusCheck();
-        // Remove o listener quando o componente é destruído
-        document.removeEventListener('keypress', this.handleKeyPress);
     }
 };
 </script>
