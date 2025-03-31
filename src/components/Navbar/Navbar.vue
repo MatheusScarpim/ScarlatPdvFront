@@ -1,20 +1,37 @@
 <template>
   <div class="navbar">
     <div class="navbar-brand">
-      <button @click="$emit('toggle-sidebar')" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <button @click="$emit('toggle-sidebar')" class="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
       <router-link to="/"> ScarlatMarket</router-link>
     </div>
     <nav class="navbar-nav">
       <ul>
-        <li><router-link to="/">🏠</router-link></li>
+        <li>
+          <button @click="logout">Logout</button>
+        </li>
       </ul>
     </nav>
   </div>
 </template>
 
 <script>
+import { keycloak } from "@/auth";
+
 export default {
-  name: 'Navbar'
+  name: "Navbar",
+  methods: {
+    logout() {
+      keycloak
+        .logout({
+          redirectUri: window.location.origin + "/",
+        })
+        .catch((error) => {
+          console.error("Erro ao fazer logout:", error);
+        });
+    },
+  },
 };
 </script>
 
