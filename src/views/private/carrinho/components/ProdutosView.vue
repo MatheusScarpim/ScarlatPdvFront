@@ -552,7 +552,13 @@
                         </div>
 
                         <div class="receipt-payment-info mb-4">
-                            <p class="text-caption">Forma de Pagamento: PIX</p>
+                            <p class="text-caption">Forma de Pagamento: {{ 
+                                selectedPaymentMethod === 'credit' 
+                                    ? `Cartão de Crédito${selectedInstallment && selectedInstallment.value > 1 ? ` (${selectedInstallment.value}x)` : ''}`
+                                    : selectedPaymentMethod === 'debit' 
+                                        ? 'Cartão de Débito' 
+                                        : 'PIX' 
+                            }}</p>
                             <p class="text-caption">Data: {{ formatDate(paymentStatus?.date_approved) }}</p>
                             <p class="text-caption">ID da Transação: {{ paymentStatus?.id }}</p>
                         </div>
@@ -955,6 +961,17 @@ export default {
         },
         async downloadReceipt() {
             try {
+                // Determina o método de pagamento para exibição
+                let metodoPagamento = 'PIX';
+                if (this.selectedPaymentMethod === 'credit') {
+                    metodoPagamento = 'Cartão de Crédito';
+                    if (this.selectedInstallment && this.selectedInstallment.value > 1) {
+                        metodoPagamento += ` (${this.selectedInstallment.value}x)`;
+                    }
+                } else if (this.selectedPaymentMethod === 'debit') {
+                    metodoPagamento = 'Cartão de Débito';
+                }
+
                 // Elemento que será convertido para PDF
                 const element = document.createElement('div');
                 element.innerHTML = `
@@ -988,7 +1005,7 @@ export default {
                         </div>
 
                         <div style="margin-bottom: 20px;">
-                            <p style="margin: 5px 0;">Forma de Pagamento: PIX</p>
+                            <p style="margin: 5px 0;">Forma de Pagamento: ${metodoPagamento}</p>
                             <p style="margin: 5px 0;">Data: ${this.formatDate(this.paymentStatus?.date_approved)}</p>
                             <p style="margin: 5px 0;">ID da Transação: ${this.paymentStatus?.id}</p>
                         </div>
