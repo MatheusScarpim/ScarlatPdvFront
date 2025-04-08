@@ -1,17 +1,16 @@
-// src/auth.js
 import Keycloak from 'keycloak-js'
 
 const keycloak = new Keycloak({
-    url: 'http://localhost:8081', // sem o /auth
-    realm: 'MERCADINHO_PDV',
-    clientId: 'pdv_mercadinho',
-})
+    url: import.meta.env.VITE_KEYCLOAK_URL,
+    realm: import.meta.env.VITE_KEYCLOAK_REALM,
+    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
+});
 
 const initializeKeycloak = () => {
     return new Promise((resolve, reject) => {
         keycloak
             .init({
-                onLoad: 'login-required', // já força login
+                onLoad: 'login-required',
                 pkceMethod: 'S256',
                 checkLoginIframe: false,
             })

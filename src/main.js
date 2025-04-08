@@ -22,21 +22,17 @@ const vuetify = createVuetify({
 })
 
 initializeKeycloak().then(() => {
-  console.log('Token:', keycloak.tokenParsed)
-  console.log('Roles:', keycloak.tokenParsed?.realm_access?.roles)
-
   const app = createApp(App)
   app.use(router)
   app.use(vuetify)
   app.use(BootstrapVue3)
   app.mount('#app')
 
-  // Redirecionamento manual após login
   const roles = keycloak.tokenParsed?.realm_access?.roles || []
   if (window.location.pathname === '/' || window.location.pathname === '/login') {
     if (roles.includes('admin')) {
       router.replace('/produto')
-    } else if (roles.includes('Mercado')) {
+    } else if (roles.includes('carrinho')) {
       router.replace('/mercadinho')
     } else {
       router.replace('/unauthorized') // ou outra página padrão

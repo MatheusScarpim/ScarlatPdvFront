@@ -47,7 +47,7 @@
             </router-link>
           </li>
           <li>
-            <router-link to="/vizualizar-produto">
+            <router-link to="/visualizar-produto">
               <i class="fa fa-eye"></i>
               <span v-if="isSidebarVisible">Ver Produto</span>
             </router-link>

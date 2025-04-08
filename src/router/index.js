@@ -16,60 +16,68 @@ const routes = [
     path: '/',
     beforeEnter: async (to, from, next) => {
       if (!keycloak.authenticated) {
-        return keycloak.login({ redirectUri: window.location.origin + '/' })
+        return keycloak.login({ redirectUri: window.location.origin + to.fullPath });
       }
 
-      const isAdmin = keycloak.hasRealmRole('admin')
-      const isMercado = keycloak.hasRealmRole('Mercado')
+      const isAdmin = keycloak.hasRealmRole('admin');
+      const isCarrinho = keycloak.hasRealmRole('carrinho');
+      
+      // Aqui verifica se a rota de destino é diferente de '/' e permite o redirecionamento para ela
+      if (to.fullPath !== '/') {
+        return next();
+      }
 
-      if (isAdmin) return next('/produto')
-      if (isMercado) return next('/mercadinho')
+      if (isAdmin) return next('/produto');
+      if (isCarrinho) return next('/mercadinho');
 
-      return next('/acesso-negado')
-    }
+      return next('/acesso-negado');
+    },
   },
-
   { path: '/produto', component: Produto, meta: { requiresAuth: true, roles: ['admin'] } },
-  { path: '/fornecedor', component: Fornecedor, meta: { requiresAuth: true, roles: ['Mercado'] } },
-  { path: '/categoria', component: Categoria, meta: { requiresAuth: true } },
-  { path: '/armazem', component: Armazem, meta: { requiresAuth: true } },
-  { path: '/medida', component: Medida, meta: { requiresAuth: true } },
-  { path: '/mercadinho', component: Mercadinho, meta: { requiresAuth: true, roles: ['Mercado'] } },
-  { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
-  { path: '/vizualizar-produto', component: VisualizarProduto, meta: { requiresAuth: true } },
-  { path: '/acesso-negado', component: AccessDenied }
-
-]
-
+  { path: '/fornecedor', component: Fornecedor, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/categoria', component: Categoria, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/armazem', component: Armazem, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/medida', component: Medida, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/mercadinho', component: Mercadinho, meta: { requiresAuth: true, roles: ['carrinho', 'admin'] } },
+  { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/visualizar-produto', component: VisualizarProduto, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/acesso-negado', component: AccessDenied },
+];
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
-// Verifica se o usuário tem a role exigida
-function hasRequiredRoles(requiredRoles) {
-  if (!requiredRoles || requiredRoles.length === 0) return true
-  return requiredRoles.some(role => keycloak.hasRealmRole(role))
-}
+router.beforeEach(async (to, from, next) => {
+  const urlContainsParams = window.location.hash.includes('state=') || window.location.hash.includes('code=');
 
-router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
-    if (!keycloak.authenticated) {
-      return keycloak.login({
-        redirectUri: window.location.origin + to.fullPath
-      })
-    }
-
-    const requiredRoles = to.meta.roles
-    const hasAccess = !requiredRoles || requiredRoles.some(role => keycloak.hasRealmRole(role))
-
-    if (!hasAccess) {
-      return next('/acesso-negado')
-    }
+  if (urlContainsParams) {
+    const cleanUrl = window.location.pathname + window.location.search;
+    window.history.replaceState(null, null, cleanUrl);
   }
 
-  next()
-})
+  if (to.meta.requiresAuth && !keycloak.authenticated) {
+    keycloak.login({ redirectUri: window.location.origin + to.fullPath });
+  } else if (!keycloak.authenticated) {
+    next();
+  } else {
+    const requiredRoles = to.meta.roles || [];
+    const hasAccess = requiredRoles.length === 0 || requiredRoles.some(role => keycloak.hasRealmRole(role));
 
+    if (!hasAccess) {
+      next('/acesso-negado');
+    } else {
+      next();
+    }
+  }
+});
+
+// Adicione um ouvinte para mudanças de URL e limpe os parâmetros indesejados
+window.addEventListener('load', () => {
+  if (window.location.hash && (window.location.hash.includes('state=') || window.location.hash.includes('code='))) {
+    const cleanUrl = window.location.pathname + window.location.search;
+    window.history.replaceState(null, null, cleanUrl);
+  }
+});
 
 export default router

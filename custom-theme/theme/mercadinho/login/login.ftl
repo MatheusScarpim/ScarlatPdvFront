@@ -8,7 +8,8 @@
 
 <div class="background-image"></div> <!-- fundo -->
 <div class="login-container">
-    <h1>${realm.displayName!realm.name}</h1>
+    <h1>Bem-vindo ao ${realm.displayName!realm.name}</h1>
+    <p>Faça seu login para continuar</p>
 
     <form action="${url.loginAction}" method="post">
         <input type="text" name="username" placeholder="Usuário" />

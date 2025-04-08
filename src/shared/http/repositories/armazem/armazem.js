@@ -1,19 +1,17 @@
-import axios from 'axios';
+import api from '@/shared/http/axios';
 
 const resourceName = 'armazem';
-const APICore = "http://localhost:8082/api/v1";
 
-
-const GetAll = (config = {}) => axios.get(`${APICore}/${resourceName}/`, config);
-const Create = (data = {}, config = {}) => axios.post(`${APICore}/${resourceName}/`, data, config);
-const Update = (id, data = {}, config = {}) => axios.put(`${APICore}/${resourceName}/${id}`, data, config);
-const Delete = (id, config = {}) => axios.delete(`${APICore}/${resourceName}/${id}`, config);
+const GetAll = (config = {}) => api.get(`/${resourceName}/`, config);
+const Create = (data = {}, config = {}) => api.post(`/${resourceName}/`, data, config);
+const Update = (id, data = {}, config = {}) => api.put(`/${resourceName}/${id}`, data, config);
+const Delete = (id, config = {}) => api.delete(`/${resourceName}/${id}`, config);
 
 const ArmazemRepository = {
   GetAll,
   Create,
   Update,
-  Delete
+  Delete,
 };
 
 export default ArmazemRepository;
