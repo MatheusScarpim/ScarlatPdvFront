@@ -83,17 +83,6 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Sidebar',
-  props: {
-    isSidebarVisible: {
-      type: Boolean,
-      required: true
-    }
-  }
-};
-</script>
 
 <style scoped>
 .modern-sidebar {
