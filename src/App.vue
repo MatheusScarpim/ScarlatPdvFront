@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import Sidebar from './components/Sidebar/Sidebar.vue';
 import Navbar from './components/Navbar/Navbar.vue';
 
-const isSidebarVisible = ref(false);
+const isSidebarVisible = ref(true);
 
 function toggleSidebar() {
   isSidebarVisible.value = !isSidebarVisible.value;
@@ -11,45 +11,55 @@ function toggleSidebar() {
 </script>
 
 <template>
-  <div class="app-container d-flex flex-column">
+  <div class="app-container">
     <Navbar @toggle-sidebar="toggleSidebar" />
-    <div class="d-flex flex-grow-1">
-      <Sidebar :isSidebarVisible="isSidebarVisible" :style="{ width: isSidebarVisible ? '200px' : '65px' }" class="sidebar" />
-      <div :class="['main-content', { 'ml-0': !isSidebarVisible, 'ml-250': isSidebarVisible }]">
-        <router-view />
-      </div>
-    </div>
+    <Sidebar :isSidebarVisible="isSidebarVisible" />
+    <main :class="['main-content', { 'sidebar-collapsed': !isSidebarVisible }]">
+      <router-view />
+    </main>
   </div>
 </template>
 
 <style scoped>
 .app-container {
-  height: 100vh;
-}
-
-.sidebar {
-  background-color: var(--cor-sidebar-fundo);
-  color: white;
-  position: fixed;
-  top: 75px; 
-  bottom: 0;
-  z-index: 1000;
+  min-height: 100vh;
+  background: #f8fafc;
 }
 
 .main-content {
-  flex-grow: 1;
-  padding: 20px;
-  padding-left: 80px;
-  padding-top: 150px; 
-  transition: margin-left 0.3s;
-  margin-left: 250;
+  margin-left: 280px;
+  margin-top: 75px;
+  padding: 30px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: calc(100vh - 75px);
 }
 
-.ml-0 {
-  padding-left: 80px;
+.main-content.sidebar-collapsed {
+  margin-left: 70px;
 }
 
-.ml-250 {
-  margin-left: 150px;
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 20px 15px;
+  }
+  
+  .main-content.sidebar-collapsed {
+    margin-left: 0;
+  }
 }
 </style>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import Sidebar from './components/Sidebar/Sidebar.vue';
+import Navbar from './components/Navbar/Navbar.vue';
+
+const isSidebarVisible = ref(true);
+
+function toggleSidebar() {
+  isSidebarVisible.value = !isSidebarVisible.value;
+}
+</script>
