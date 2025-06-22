@@ -21,7 +21,7 @@
 
 <script>
 
-import MedidaRepository from '@/shared/http/repositories/medida/medida';
+import MedidaRepository from '@/shared/http/repositories/Medida/medida';
 
 export default {
     name: 'MedidaAdd',

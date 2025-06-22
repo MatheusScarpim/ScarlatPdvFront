@@ -40,7 +40,7 @@
 
 <script>
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
-import MedidaRepository from '@/shared/http/repositories/medida/medida';
+import MedidaRepository from '@/shared/http/repositories/Medida/medida';
 import CategoriaRepository from '@/shared/http/repositories/categoria/categoria';
 import FornecedorRepository from '@/shared/http/repositories/fornecedor/fornecedor';
 
