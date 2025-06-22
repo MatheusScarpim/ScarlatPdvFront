@@ -274,7 +274,6 @@ export default {
   }
 }
 </style>
-</template>
 
 <script>
 export default {
