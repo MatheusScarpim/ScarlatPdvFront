@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import MedidaRepository from '@/shared/http/repositories/medida/medida';
+import MedidaRepository from '@/shared/http/repositories/Medida/medida';
 import MedidaAdd from './MedidaAdd.vue';
 
 export default {
