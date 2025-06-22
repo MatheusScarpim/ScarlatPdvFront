@@ -1,15 +1,3 @@
-<script setup>
-import { ref } from 'vue';
-import Sidebar from './components/Sidebar/Sidebar.vue';
-import Navbar from './components/Navbar/Navbar.vue';
-
-const isSidebarVisible = ref(true);
-
-function toggleSidebar() {
-  isSidebarVisible.value = !isSidebarVisible.value;
-}
-</script>
-
 <template>
   <div class="app-container">
     <Navbar @toggle-sidebar="toggleSidebar" />
