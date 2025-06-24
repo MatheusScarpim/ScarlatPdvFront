@@ -11,8 +11,6 @@ export default {
   name: 'WarehouseManager',
   components: {
     WarehouseList,
-    AddProductDialog,
-    ViewProductsDialog,
   },
   data() {
     return {
