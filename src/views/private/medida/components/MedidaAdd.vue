@@ -1,86 +1,218 @@
 <template>
-    <v-dialog v-model="internalDialog" max-width="600px">
-        <v-card>
-            <v-card-title>
-                <span class="headline">{{ values ? 'Alterar Medida' : 'Adicionar Medida' }}</span>
-            </v-card-title>
-            <v-card-text>
-                <v-form ref="form">
-                    <v-text-field v-model="form.tipo" label="Tipo" required></v-text-field>
-                    <v-text-field v-model="form.abreviacao" label="Abreviação" required></v-text-field>
-                </v-form>
-            </v-card-text>
-            <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close">Cancelar</v-btn>
-                <v-btn color="blue darken-1" text @click="handleSubmit">Salvar</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
+  <!-- Modal Bootstrap -->
+  <div class="modal fade" :class="{ show: internalDialog }" :style="{ display: internalDialog ? 'block' : 'none' }" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-balance-scale"></i>
+            {{ values ? 'Alterar Medida' : 'Adicionar Medida' }}
+          </h5>
+          <button type="button" class="btn-close" @click="close"></button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="handleSubmit">
+            <div class="mb-3">
+              <label for="tipo" class="form-label">Tipo *</label>
+              <input
+                type="text"
+                class="form-control"
+                id="tipo"
+                v-model="form.tipo"
+                required
+                placeholder="Ex: Quilograma, Litro, Unidade"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="abreviacao" class="form-label">Abreviação *</label>
+              <input
+                type="text"
+                class="form-control"
+                id="abreviacao"
+                v-model="form.abreviacao"
+                required
+                placeholder="Ex: kg, L, un"
+                maxlength="10"
+              />
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="close">
+            <i class="fas fa-times"></i>
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-primary" @click="handleSubmit">
+            <i class="fas fa-save"></i>
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Backdrop do modal -->
+  <div v-if="internalDialog" class="modal-backdrop fade show"></div>
 </template>
 
 <script>
-
 import MedidaRepository from '@/shared/http/repositories/medida/medida';
 
 export default {
-    name: 'MedidaAdd',
-    props: {
-        dialog: {
-            type: Boolean,
-            required: true
-        },
-        values: {
-            type: Object,
-            required: false,
-            default: null
-        }
+  name: 'MedidaAdd',
+  props: {
+    dialog: {
+      type: Boolean,
+      required: true
     },
-    data() {
-        return {
-            form: {
-                tipo: '',
-                abreviacao: ''
-            }
-        };
-    },
-    computed: {
-        internalDialog: {
-            get() {
-                return this.dialog;
-            },
-            set(value) {
-                this.$emit('update:dialog', value);
-            }
-        }
-    },
-    watch: {
-        values: {
-            handler() {
-                if(this.values) {
-                    this.form = this.values;
-                } else {
-                    this.form = {
-                        nome: '',
-                        abreviacao: ''
-                    };
-                }
-            },
-            deep: true
-        }
-    },
-    methods: {
-        async handleSubmit() {
-            if(this.values) {
-                await MedidaRepository.Update(this.values.id, this.form);
-            } else {
-                await MedidaRepository.Create(this.form);
-            }
-            this.$emit('update:dialog', false);
-        },
-        close() {
-            this.$emit('update:dialog', false);
-        }
+    values: {
+      type: Object,
+      required: false,
+      default: null
     }
+  },
+  data() {
+    return {
+      form: {
+        tipo: '',
+        abreviacao: ''
+      }
+    };
+  },
+  computed: {
+    internalDialog: {
+      get() {
+        return this.dialog;
+      },
+      set(value) {
+        this.$emit('update:dialog', value);
+      }
+    }
+  },
+  watch: {
+    values: {
+      handler() {
+        if(this.values) {
+          this.form = { ...this.values };
+        } else {
+          this.form = {
+            tipo: '',
+            abreviacao: ''
+          };
+        }
+      },
+      deep: true
+    },
+    internalDialog(val) {
+      document.body.style.overflow = val ? 'hidden' : 'auto';
+    }
+  },
+  beforeUnmount() {
+    document.body.style.overflow = 'auto';
+  },
+  methods: {
+    async handleSubmit() {
+      if (!this.form.tipo.trim() || !this.form.abreviacao.trim()) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      try {
+        if(this.values) {
+          await MedidaRepository.Update(this.values.id, this.form);
+        } else {
+          await MedidaRepository.Create(this.form);
+        }
+        this.$emit('update:dialog', false);
+      } catch (error) {
+        console.error('Erro ao salvar medida:', error);
+        alert('Erro ao salvar medida. Tente novamente.');
+      }
+    },
+    close() {
+      this.$emit('update:dialog', false);
+    }
+  }
 };
 </script>
+
+<style scoped>
+/* Modal customizado */
+.modal {
+  z-index: 1050;
+}
+
+.modal-backdrop {
+  z-index: 1040;
+}
+
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.btn-close {
+  filter: invert(1);
+  opacity: 0.8;
+}
+
+.btn-close:hover {
+  opacity: 1;
+}
+
+.form-control {
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-label {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  border: none;
+}
+</style>
