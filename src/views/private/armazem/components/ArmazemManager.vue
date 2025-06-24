@@ -7,7 +7,6 @@
 
 <script>
 import WarehouseList from './ArmazemList.vue';
-import ViewProductsDialog from './ViewProductsDialog.vue';
 import ArmazemRepository from '@/shared/http/repositories/armazem/armazem';
 
 export default {
