@@ -122,12 +122,15 @@
         Mostrando {{ startItem }} a {{ endItem }} de {{ totalItems }} registros
       </div>
       <div class="pagination-controls">
-        <select v-model="itemsPerPage" @change="onItemsPerPageChange" class="form-control">
-          <option v-for="size in pageSizes" :key="size" :value="size">
-            {{ size }} por página
-          </option>
-        </select>
-        
+        <select
+  :value="itemsPerPage"
+  @input="$emit('update:itemsPerPage', Number($event.target.value)); onItemsPerPageChange()"
+  class="form-control"
+>
+  <option v-for="size in pageSizes" :key="size" :value="size">
+    {{ size }} por página
+  </option>
+</select>
         <div class="pagination-buttons">
           <button 
             @click="goToPage(1)" 
