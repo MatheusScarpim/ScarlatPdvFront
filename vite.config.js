@@ -11,6 +11,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/payment-service': {
+        target: 'http://localhost:4000', // Redirecionar para o serviço de pagamento
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/payment-service/, ''),
+      },
     },
     allowedHosts:true, // Permitir que todos os hosts acessem o servidor
   },

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const APICore = "http://localhost:4000";
+const APICore = "/payment-service";
 
 const CreatePixPayment = (data = {}, config = {}) => axios.post(`${APICore}/payments/pix`, data, config);
 const GetPaymentStatus = (paymentId, config = {}) => axios.get(`${APICore}/payments/status/${paymentId}`, config);
@@ -14,4 +14,4 @@ const PagamentoRepository = {
     ProcessCardPayment
 };
 
-export default PagamentoRepository; 
+export default PagamentoRepository;
