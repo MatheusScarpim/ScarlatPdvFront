@@ -1,117 +1,125 @@
 <template>
     <div>
-        <v-data-table-server 
-            :headers="headers"
-            :items="medidas" 
-            :items-per-page="options.itemsPerPage"
-            :server-items-length="totalMercadinhos"
+        <DataGrid
+            title="Lista de Mercadinhos"
+            :items="mercadinhos"
+            :columns="columns"
             :loading="loading"
-            :items-length="totalMercadinhos"
+            :current-page="options.page"
+            :items-per-page="options.itemsPerPage"
             :total-items="totalMercadinhos"
-            @update:options="fetchMercadinhos"
-            :footer-props="{
-                'items-per-page-options': [5, 10, 15],
-                'show-first-last-page': true,
-                'color': 'pink' // Define a cor da paginação como rosa
-            }"
-        >
-            <template v-slot:top>
-                <v-toolbar flat>
-                    <v-toolbar-title>Lista de Mercadinhos</v-toolbar-title>
-                    <v-divider class="mx-4" inset vertical></v-divider>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchMercadinhos">Atualizar</v-btn>
-                </v-toolbar>
-            </template>
-            <template v-slot:item.actions="{ item }">
-                <v-icon small @click="editMercadinho(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteMercadinho(item)">mdi-delete</v-icon>
-            </template>
-        </v-data-table-server>
+            @add="openModal"
+            @edit="editMercadinho"
+            @delete="deleteMercadinho"
+            @refresh="fetchMercadinhos"
+            @page-change="onPageChange"
+            @items-per-page-change="onItemsPerPageChange"
+            @search="onSearch"
+        />
 
         <!-- Modal para Adicionar Mercadinho -->
-        <MercadinhoAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchMercadinhos" @close-modal="closeModal" />
+        <MercadinhoAdd :values="editValues" v-model:dialog="dialog" @update:dialog="onDialogUpdate" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
 import MercadinhoRepository from '@/shared/http/repositories/mercadinho/mercadinho';
 import MercadinhoAdd from './MercadinhoAdd.vue';
+import { DataGrid } from '@/components/Grid';
 
 export default {
     components: {
         MercadinhoAdd,
+        DataGrid
     },
     data() {
         return {
             dialog: false,
-            medidas: [],
+            mercadinhos: [],
             totalMercadinhos: 0,
             options: {
-                page: 1, // Página atual
-                itemsPerPage: 10, // Quantidade de itens por página
+                page: 1,
+                itemsPerPage: 10,
             },
-            totalPages: 0,
             loading: false,
-            headers: [
-                { title: 'id', key: 'id' },
-                { title: 'Nome', key: 'nome' },
-                { title: 'Ações', key: 'actions', sortable: false },
+            columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'nome', title: 'Nome' }
             ],
             editValues: null,
+            searchTerm: ''
         };
     },
-    watch: {
-        options: {
-            handler() {
-                this.fetchMercadinhos();
-            },
-            deep: true,
-        },
-    },
     methods: {
-        async fetchMercadinhos({ page, itemsPerPage, sortBy }) {
+        async fetchMercadinhos() {
             this.loading = true;
             try {
                 const params = {
-                    page: page - 1,
-                    size: itemsPerPage,
+                    page: this.options.page - 1,
+                    size: this.options.itemsPerPage,
                 };
+                
+                if (this.searchTerm) {
+                    params.search = this.searchTerm;
+                }
+                
                 const response = await MercadinhoRepository.GetAll({ params });
-                this.medidas = response.data.content;
+                this.mercadinhos = response.data.content;
                 this.totalMercadinhos = response.data.page.totalElements;
-                this.totalPages = response.data.page.totalPages;
             } catch (error) {
-                console.error('Erro ao buscar medidas:', error);
+                console.error('Erro ao buscar mercadinhos:', error);
             } finally {
                 this.loading = false;
             }
         },
         openModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = true;
         },
         closeModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = false;
         },
         clearForm() {
             this.editValues = null;
         },
         editMercadinho(item) {
-            this.editValues = item;
+            this.editValues = { ...item };
             this.dialog = true;
         },
         async deleteMercadinho(item) {
-            if (!confirm('Deseja realmente excluir este medida?')) return;
+            if (!confirm('Deseja realmente excluir este mercadinho?')) return;
 
-           await MercadinhoRepository.Delete(item.id);
-           this.fetchMercadinhos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+            try {
+                await MercadinhoRepository.Delete(item.id);
+                this.fetchMercadinhos();
+            } catch (error) {
+                console.error('Erro ao excluir mercadinho:', error);
+            }
         },
+        onPageChange(page) {
+            this.options.page = page;
+            this.fetchMercadinhos();
+        },
+        onItemsPerPageChange(itemsPerPage) {
+            this.options.itemsPerPage = itemsPerPage;
+            this.options.page = 1;
+            this.fetchMercadinhos();
+        },
+        onSearch(searchTerm) {
+            this.searchTerm = searchTerm;
+            this.options.page = 1;
+            this.fetchMercadinhos();
+        },
+        onDialogUpdate(value) {
+            this.dialog = value;
+            if (!value) {
+                this.fetchMercadinhos();
+            }
+        }
     },
     mounted() {
-        this.fetchMercadinhos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+        this.fetchMercadinhos();
     },
 };
 </script>

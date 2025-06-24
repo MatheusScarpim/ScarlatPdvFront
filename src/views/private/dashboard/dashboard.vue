@@ -1,82 +1,96 @@
 <template>
-    <h2>Dashboard</h2>
-    <v-container fluid>
+    <div class="dashboard">
+        <h2>Dashboard</h2>
+        
         <!-- Cards de Resumo -->
-        <v-row>
-            <v-col cols="12" sm="6" md="3">
-                <v-card class="mx-auto" color="primary" dark>
-                    <v-card-text>
-                        <div class="text-h4 font-weight-bold">
-                            R$ {{ Number(resumo.totalVendas).toFixed(2) }}
-                        </div>
-                        <div class="text-subtitle-1">Total de Vendas</div>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-            <v-col cols="12" sm="6" md="3">
-                <v-card class="mx-auto" color="success" dark>
-                    <v-card-text>
-                        <div class="text-h4 font-weight-bold">
-                            R$ {{ Number(resumo.vendasMes).toFixed(2) }}
-                        </div>
-                        <div class="text-subtitle-1">Vendas do Mês</div>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-            <v-col cols="12" sm="6" md="3">
-                <v-card class="mx-auto" color="info" dark>
-                    <v-card-text>
-                        <div class="text-h4 font-weight-bold">
-                            {{ Number(resumo.quantidadeVendas) }}
-                        </div>
-                        <div class="text-subtitle-1">Quantidade de Vendas</div>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-            <v-col cols="12" sm="6" md="3">
-                <v-card class="mx-auto" color="warning" dark>
-                    <v-card-text>
-                        <div class="text-h4 font-weight-bold">
-                            R$ {{ Number(resumo.ticketMedio).toFixed(2) }}
-                        </div>
-                        <div class="text-subtitle-1">Ticket Médio</div>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-        </v-row>
+        <div class="dashboard-cards">
+            <div class="dashboard-card primary">
+                <div class="card-content">
+                    <div class="card-value">
+                        R$ {{ Number(resumo.totalVendas).toFixed(2) }}
+                    </div>
+                    <div class="card-label">Total de Vendas</div>
+                </div>
+                <div class="card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+            
+            <div class="dashboard-card success">
+                <div class="card-content">
+                    <div class="card-value">
+                        R$ {{ Number(resumo.vendasMes).toFixed(2) }}
+                    </div>
+                    <div class="card-label">Vendas do Mês</div>
+                </div>
+                <div class="card-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+            </div>
+            
+            <div class="dashboard-card info">
+                <div class="card-content">
+                    <div class="card-value">
+                        {{ Number(resumo.quantidadeVendas) }}
+                    </div>
+                    <div class="card-label">Quantidade de Vendas</div>
+                </div>
+                <div class="card-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+            </div>
+            
+            <div class="dashboard-card warning">
+                <div class="card-content">
+                    <div class="card-value">
+                        R$ {{ Number(resumo.ticketMedio).toFixed(2) }}
+                    </div>
+                    <div class="card-label">Ticket Médio</div>
+                </div>
+                <div class="card-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+        </div>
 
         <!-- Tabela de Vendas Recentes -->
-        <v-row class="mt-4">
-            <v-col cols="12">
-                <v-card>
-                    <v-card-title>Vendas Recentes</v-card-title>
-                    <v-card-text>
-                        <v-data-table
-                            :headers="headers"
-                            :items="vendas"
-                            :items-per-page="5"
-                            :loading="isLoading"
-                            class="elevation-1"
-                        >
-                            <template v-slot:item.valor_total="{ item }">
-                                R$ {{ Number(item.valor_total).toFixed(2) }}
-                            </template>
-                            <template v-slot:item.data_venda="{ item }">
-                                {{ formatDate(item.data_venda) }}
-                            </template>
-                        </v-data-table>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-        </v-row>
-    </v-container>
+        <div class="dashboard-table">
+            <DataGrid
+                title="Vendas Recentes"
+                :items="vendas"
+                :columns="columns"
+                :loading="isLoading"
+                :items-per-page="5"
+                :show-pagination="false"
+                :show-filters="false"
+                :show-actions="false"
+                :show-add-button="false"
+                :show-refresh-button="true"
+                @refresh="loadDashboardData"
+            >
+                <!-- Slot customizado para valor total -->
+                <template #item.valor_total="{ value }">
+                    <span class="price-value">{{ formatCurrency(value) }}</span>
+                </template>
+                
+                <!-- Slot customizado para data -->
+                <template #item.data_venda="{ value }">
+                    {{ formatDate(value) }}
+                </template>
+            </DataGrid>
+        </div>
+    </div>
 </template>
 
 <script>
 import PagamentoRepository from '@/shared/http/repositories/pagamento/pagamento';
+import { DataGrid } from '@/components/Grid';
 
 export default {
     name: 'Dashboard',
+    components: {
+        DataGrid
+    },
     data() {
         return {
             resumo: {
@@ -86,12 +100,12 @@ export default {
                 mediaVendas: 0,
                 ticketMedio: 0
             },
-            headers: [
-                { title: 'ID', key: 'id' },
-                { title: 'Data', key: 'data_venda' },
-                { title: 'Mercadinho', key: 'mercadinho.nome' },
-                { title: 'Valor Total', key: 'valor_total' },
-                { title: 'Quantidade', key: 'produto.quantidade' }
+            columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'data_venda', title: 'Data' },
+                { key: 'mercadinho.nome', title: 'Mercadinho' },
+                { key: 'valor_total', title: 'Valor Total' },
+                { key: 'produto.quantidade', title: 'Quantidade' }
             ],
             vendas: [],
             isLoading: true
@@ -105,7 +119,6 @@ export default {
                 console.log('Resposta da API:', response.data);
 
                 if (response.data && response.data.resumo) {
-                    // Atualiza o resumo
                     this.resumo = {
                         totalVendas: Number(response.data.resumo.totalVendas) || 0,
                         vendasMes: Number(response.data.resumo.vendasMes) || 0,
@@ -114,12 +127,10 @@ export default {
                         ticketMedio: Number(response.data.resumo.ticketMedio) || 0
                     };
                     
-                    // Atualiza a tabela de vendas
                     this.vendas = response.data.vendas || [];
                 }
             } catch (error) {
                 console.error('Erro ao carregar dados do dashboard:', error);
-                // Define valores padrão em caso de erro
                 this.resetData();
             } finally {
                 this.isLoading = false;
@@ -142,18 +153,137 @@ export default {
                 day: '2-digit',
                 month: '2-digit'
             });
+        },
+        formatCurrency(value) {
+            if (!value) return 'R$ 0,00';
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
         }
     },
     mounted() {
         this.loadDashboardData();
-        // Atualiza os dados a cada 5 minutos
         setInterval(this.loadDashboardData, 300000);
     }
 };
 </script>
 
 <style scoped>
-.v-card {
-    height: 100%;
+.dashboard {
+    padding: 0;
+}
+
+.dashboard h2 {
+    margin-bottom: 2rem;
+    color: #2d3748;
+}
+
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left: 4px solid;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card.primary {
+    border-left-color: #667eea;
+}
+
+.dashboard-card.success {
+    border-left-color: #48bb78;
+}
+
+.dashboard-card.info {
+    border-left-color: #4299e1;
+}
+
+.dashboard-card.warning {
+    border-left-color: #ed8936;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.card-label {
+    font-size: 0.9rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+    margin-left: 16px;
+}
+
+.dashboard-card.primary .card-icon {
+    color: #667eea;
+}
+
+.dashboard-card.success .card-icon {
+    color: #48bb78;
+}
+
+.dashboard-card.info .card-icon {
+    color: #4299e1;
+}
+
+.dashboard-card.warning .card-icon {
+    color: #ed8936;
+}
+
+.dashboard-table {
+    margin-top: 20px;
+}
+
+.price-value {
+    font-weight: 600;
+    color: #48bb78;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .dashboard-card {
+        padding: 20px;
+    }
+    
+    .card-value {
+        font-size: 1.5rem;
+    }
+    
+    .card-icon {
+        font-size: 2rem;
+    }
 }
 </style>

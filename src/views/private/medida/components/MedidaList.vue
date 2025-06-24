@@ -1,47 +1,36 @@
 <template>
     <div>
-        <v-data-table-server 
-            :headers="headers"
-            :items="medidas" 
-            :items-per-page="options.itemsPerPage"
-            :server-items-length="totalMedidas"
+        <DataGrid
+            title="Lista de Medidas"
+            :items="medidas"
+            :columns="columns"
             :loading="loading"
-            :items-length="totalMedidas"
+            :current-page="options.page"
+            :items-per-page="options.itemsPerPage"
             :total-items="totalMedidas"
-            @update:options="fetchMedidas"
-            :footer-props="{
-                'items-per-page-options': [5, 10, 15],
-                'show-first-last-page': true,
-                'color': 'pink' // Define a cor da paginação como rosa
-            }"
-        >
-            <template v-slot:top>
-                <v-toolbar flat>
-                    <v-toolbar-title>Lista de Medidas</v-toolbar-title>
-                    <v-divider class="mx-4" inset vertical></v-divider>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchMedidas">Atualizar</v-btn>
-                </v-toolbar>
-            </template>
-            <template v-slot:item.actions="{ item }">
-                <v-icon small @click="editMedida(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteMedida(item)">mdi-delete</v-icon>
-            </template>
-        </v-data-table-server>
+            @add="openModal"
+            @edit="editMedida"
+            @delete="deleteMedida"
+            @refresh="fetchMedidas"
+            @page-change="onPageChange"
+            @items-per-page-change="onItemsPerPageChange"
+            @search="onSearch"
+        />
 
         <!-- Modal para Adicionar Medida -->
-        <MedidaAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchMedidas" @close-modal="closeModal" />
+        <MedidaAdd :values="editValues" v-model:dialog="dialog" @update:dialog="onDialogUpdate" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
-import MedidaRepository from '@/shared/http/repositories/Medida/medida';
+import MedidaRepository from '@/shared/http/repositories/medida/medida';
 import MedidaAdd from './MedidaAdd.vue';
+import { DataGrid } from '@/components/Grid';
 
 export default {
     components: {
         MedidaAdd,
+        DataGrid
     },
     data() {
         return {
@@ -49,40 +38,35 @@ export default {
             medidas: [],
             totalMedidas: 0,
             options: {
-                page: 1, // Página atual
-                itemsPerPage: 10, // Quantidade de itens por página
+                page: 1,
+                itemsPerPage: 10,
             },
-            totalPages: 0,
             loading: false,
-            headers: [
-                { title: 'id', key: 'id' },
-                { title: 'Tipo', key: 'tipo' },
-                { title: 'Abreviação', key: 'abreviacao' },
-                { title: 'Ações', key: 'actions', sortable: false },
+            columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'tipo', title: 'Tipo' },
+                { key: 'abreviacao', title: 'Abreviação' }
             ],
             editValues: null,
+            searchTerm: ''
         };
     },
-    watch: {
-        options: {
-            handler() {
-                this.fetchMedidas();
-            },
-            deep: true,
-        },
-    },
     methods: {
-        async fetchMedidas({ page, itemsPerPage, sortBy }) {
+        async fetchMedidas() {
             this.loading = true;
             try {
                 const params = {
-                    page: page - 1,
-                    size: itemsPerPage,
+                    page: this.options.page - 1,
+                    size: this.options.itemsPerPage,
                 };
+                
+                if (this.searchTerm) {
+                    params.search = this.searchTerm;
+                }
+                
                 const response = await MedidaRepository.GetAll({ params });
                 this.medidas = response.data.content;
                 this.totalMedidas = response.data.page.totalElements;
-                this.totalPages = response.data.page.totalPages;
             } catch (error) {
                 console.error('Erro ao buscar medidas:', error);
             } finally {
@@ -90,29 +74,53 @@ export default {
             }
         },
         openModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = true;
         },
         closeModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = false;
         },
         clearForm() {
             this.editValues = null;
         },
         editMedida(item) {
-            this.editValues = item;
+            this.editValues = { ...item };
             this.dialog = true;
         },
         async deleteMedida(item) {
-            if (!confirm('Deseja realmente excluir este medida?')) return;
+            if (!confirm('Deseja realmente excluir esta medida?')) return;
 
-           await MedidaRepository.Delete(item.id);
-           this.fetchMedidas({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+            try {
+                await MedidaRepository.Delete(item.id);
+                this.fetchMedidas();
+            } catch (error) {
+                console.error('Erro ao excluir medida:', error);
+            }
         },
+        onPageChange(page) {
+            this.options.page = page;
+            this.fetchMedidas();
+        },
+        onItemsPerPageChange(itemsPerPage) {
+            this.options.itemsPerPage = itemsPerPage;
+            this.options.page = 1;
+            this.fetchMedidas();
+        },
+        onSearch(searchTerm) {
+            this.searchTerm = searchTerm;
+            this.options.page = 1;
+            this.fetchMedidas();
+        },
+        onDialogUpdate(value) {
+            this.dialog = value;
+            if (!value) {
+                this.fetchMedidas();
+            }
+        }
     },
     mounted() {
-        this.fetchMedidas({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+        this.fetchMedidas();
     },
 };
 </script>

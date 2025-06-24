@@ -1,42 +1,41 @@
 <template>
     <div>
-        <v-data-table-server 
-            :headers="headers"
-            :items="produtos" 
-            :items-per-page="options.itemsPerPage"
-            :server-items-length="totalProdutos"
+        <DataGrid
+            title="Lista de Produtos"
+            :items="produtos"
+            :columns="columns"
             :loading="loading"
-            :items-length="totalProdutos"
+            :current-page="options.page"
+            :items-per-page="options.itemsPerPage"
             :total-items="totalProdutos"
-            @update:options="fetchProdutos"
+            @add="openModal"
+            @edit="editProduto"
+            @delete="deleteProduto"
+            @refresh="fetchProdutos"
+            @page-change="onPageChange"
+            @items-per-page-change="onItemsPerPageChange"
+            @search="onSearch"
         >
-            <template v-slot:top>
-                <v-toolbar flat>
-                    <v-toolbar-title>Lista de Produtos</v-toolbar-title>
-                    <v-divider class="mx-4" inset vertical></v-divider>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchProdutos">Atualizar</v-btn>
-                </v-toolbar>
+            <!-- Slot customizado para preço -->
+            <template #item.preco="{ value }">
+                <span class="price-value">{{ formatCurrency(value) }}</span>
             </template>
-            <template v-slot:item.actions="{ item }">
-                <v-icon small @click="editProduto(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteProduto(item)">mdi-delete</v-icon>
-            </template>
-        </v-data-table-server>
+        </DataGrid>
 
         <!-- Modal para Adicionar Produto -->
-        <ProdutoAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchProdutos" @close-modal="closeModal" />
+        <ProdutoAdd :values="editValues" v-model:dialog="dialog" @update:dialog="onDialogUpdate" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
 import ProdutoRepository from '@/shared/http/repositories/produto/produto';
 import ProdutoAdd from './ProdutoAdd.vue';
+import { DataGrid } from '@/components/Grid';
 
 export default {
     components: {
         ProdutoAdd,
+        DataGrid
     },
     data() {
         return {
@@ -44,40 +43,38 @@ export default {
             produtos: [],
             totalProdutos: 0,
             options: {
-                page: 1, // Página atual
-                itemsPerPage: 10, // Quantidade de itens por página
+                page: 1,
+                itemsPerPage: 10,
             },
-            totalPages: 0,
             loading: false,
-            headers: [
-                { title: 'id', key: 'id' },
-                { title: 'Nome', key: 'nome' },
-                {title: 'Categoria', key: 'categoria.nome'},
-                { title: 'Ações', key: 'actions', sortable: false },
+            columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'nome', title: 'Nome' },
+                { key: 'categoria.nome', title: 'Categoria' },
+                { key: 'preco', title: 'Preço', type: 'currency' },
+                { key: 'qtdMedida', title: 'Quantidade' },
+                { key: 'codBarra', title: 'Código de Barras' }
             ],
             editValues: null,
+            searchTerm: ''
         };
     },
-    watch: {
-        options: {
-            handler() {
-                this.fetchProdutos();
-            },
-            deep: true,
-        },
-    },
     methods: {
-        async fetchProdutos({ page, itemsPerPage, sortBy }) {
+        async fetchProdutos() {
             this.loading = true;
             try {
                 const params = {
-                    page: page - 1,
-                    size: itemsPerPage,
+                    page: this.options.page - 1,
+                    size: this.options.itemsPerPage,
                 };
+                
+                if (this.searchTerm) {
+                    params.search = this.searchTerm;
+                }
+                
                 const response = await ProdutoRepository.GetAll({ params });
                 this.produtos = response.data.content;
                 this.totalProdutos = response.data.page.totalElements;
-                this.totalPages = response.data.page.totalPages;
             } catch (error) {
                 console.error('Erro ao buscar produtos:', error);
             } finally {
@@ -85,29 +82,67 @@ export default {
             }
         },
         openModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = true;
         },
         closeModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = false;
         },
         clearForm() {
             this.editValues = null;
         },
         editProduto(item) {
-            this.editValues = item;
+            this.editValues = { ...item };
             this.dialog = true;
         },
         async deleteProduto(item) {
             if (!confirm('Deseja realmente excluir este produto?')) return;
 
-           await ProdutoRepository.Delete(item.id);
-           this.fetchProdutos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+            try {
+                await ProdutoRepository.Delete(item.id);
+                this.fetchProdutos();
+            } catch (error) {
+                console.error('Erro ao excluir produto:', error);
+            }
         },
+        onPageChange(page) {
+            this.options.page = page;
+            this.fetchProdutos();
+        },
+        onItemsPerPageChange(itemsPerPage) {
+            this.options.itemsPerPage = itemsPerPage;
+            this.options.page = 1;
+            this.fetchProdutos();
+        },
+        onSearch(searchTerm) {
+            this.searchTerm = searchTerm;
+            this.options.page = 1;
+            this.fetchProdutos();
+        },
+        onDialogUpdate(value) {
+            this.dialog = value;
+            if (!value) {
+                this.fetchProdutos();
+            }
+        },
+        formatCurrency(value) {
+            if (!value) return 'R$ 0,00';
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
     },
     mounted() {
-        this.fetchProdutos({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+        this.fetchProdutos();
     },
 };
 </script>
+
+<style scoped>
+.price-value {
+    font-weight: 600;
+    color: #48bb78;
+}
+</style>

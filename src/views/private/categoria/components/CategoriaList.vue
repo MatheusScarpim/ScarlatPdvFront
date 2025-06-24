@@ -1,47 +1,36 @@
 <template>
     <div>
-        <v-data-table-server 
-            :headers="headers"
-            :items="categorias" 
-            :items-per-page="options.itemsPerPage"
-            :server-items-length="totalCategorias"
+        <DataGrid
+            title="Lista de Categorias"
+            :items="categorias"
+            :columns="columns"
             :loading="loading"
-            :items-length="totalCategorias"
+            :current-page="options.page"
+            :items-per-page="options.itemsPerPage"
             :total-items="totalCategorias"
-            @update:options="fetchCategorias"
-            :footer-props="{
-                'items-per-page-options': [5, 10, 15],
-                'show-first-last-page': true,
-                'color': 'pink' // Define a cor da paginação como rosa
-            }"
-        >
-            <template v-slot:top>
-                <v-toolbar flat>
-                    <v-toolbar-title>Lista de Categorias</v-toolbar-title>
-                    <v-divider class="mx-4" inset vertical></v-divider>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="openModal">Adicionar</v-btn>
-                    <v-btn color="primary" @click="fetchCategorias">Atualizar</v-btn>
-                </v-toolbar>
-            </template>
-            <template v-slot:item.actions="{ item }">
-                <v-icon small @click="editCategoria(item)">mdi-pencil</v-icon>
-                <v-icon small @click="deleteCategoria(item)">mdi-delete</v-icon>
-            </template>
-        </v-data-table-server>
+            @add="openModal"
+            @edit="editCategoria"
+            @delete="deleteCategoria"
+            @refresh="fetchCategorias"
+            @page-change="onPageChange"
+            @items-per-page-change="onItemsPerPageChange"
+            @search="onSearch"
+        />
 
         <!-- Modal para Adicionar Categoria -->
-        <CategoriaAdd :values="editValues" v-model:dialog="dialog" @update:dialog="fetchCategorias" @close-modal="closeModal" />
+        <CategoriaAdd :values="editValues" v-model:dialog="dialog" @update:dialog="onDialogUpdate" @close-modal="closeModal" />
     </div>
 </template>
 
 <script>
 import CategoriaRepository from '@/shared/http/repositories/categoria/categoria';
 import CategoriaAdd from './CategoriaAdd.vue';
+import { DataGrid } from '@/components/Grid';
 
 export default {
     components: {
         CategoriaAdd,
+        DataGrid
     },
     data() {
         return {
@@ -49,40 +38,35 @@ export default {
             categorias: [],
             totalCategorias: 0,
             options: {
-                page: 1, // Página atual
-                itemsPerPage: 10, // Quantidade de itens por página
+                page: 1,
+                itemsPerPage: 10,
             },
-            totalPages: 0,
             loading: false,
-            headers: [
-                { title: 'id', key: 'id' },
-                { title: 'Nome', key: 'nome' },
-                { title: 'Descrição', key: 'descricao'},
-                { title: 'Ações', key: 'actions', sortable: false },
+            columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'nome', title: 'Nome' },
+                { key: 'descricao', title: 'Descrição' }
             ],
             editValues: null,
+            searchTerm: ''
         };
     },
-    watch: {
-        options: {
-            handler() {
-                this.fetchCategorias();
-            },
-            deep: true,
-        },
-    },
     methods: {
-        async fetchCategorias({ page, itemsPerPage, sortBy }) {
+        async fetchCategorias() {
             this.loading = true;
             try {
                 const params = {
-                    page: page - 1,
-                    size: itemsPerPage,
+                    page: this.options.page - 1,
+                    size: this.options.itemsPerPage,
                 };
+                
+                if (this.searchTerm) {
+                    params.search = this.searchTerm;
+                }
+                
                 const response = await CategoriaRepository.GetAll({ params });
                 this.categorias = response.data.content;
                 this.totalCategorias = response.data.page.totalElements;
-                this.totalPages = response.data.page.totalPages;
             } catch (error) {
                 console.error('Erro ao buscar categorias:', error);
             } finally {
@@ -90,29 +74,53 @@ export default {
             }
         },
         openModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = true;
         },
         closeModal() {
-            this.clearForm()
+            this.clearForm();
             this.dialog = false;
         },
         clearForm() {
             this.editValues = null;
         },
         editCategoria(item) {
-            this.editValues = item;
+            this.editValues = { ...item };
             this.dialog = true;
         },
         async deleteCategoria(item) {
             if (!confirm('Deseja realmente excluir esta categoria?')) return;
 
-           await CategoriaRepository.Delete(item.id);
-           this.fetchCategorias({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+            try {
+                await CategoriaRepository.Delete(item.id);
+                this.fetchCategorias();
+            } catch (error) {
+                console.error('Erro ao excluir categoria:', error);
+            }
         },
+        onPageChange(page) {
+            this.options.page = page;
+            this.fetchCategorias();
+        },
+        onItemsPerPageChange(itemsPerPage) {
+            this.options.itemsPerPage = itemsPerPage;
+            this.options.page = 1;
+            this.fetchCategorias();
+        },
+        onSearch(searchTerm) {
+            this.searchTerm = searchTerm;
+            this.options.page = 1;
+            this.fetchCategorias();
+        },
+        onDialogUpdate(value) {
+            this.dialog = value;
+            if (!value) {
+                this.fetchCategorias();
+            }
+        }
     },
     mounted() {
-        this.fetchCategorias({ page: this.options.page, itemsPerPage: this.options.itemsPerPage });
+        this.fetchCategorias();
     },
 };
 </script>
