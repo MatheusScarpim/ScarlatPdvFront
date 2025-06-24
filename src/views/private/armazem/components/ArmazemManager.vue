@@ -1,8 +1,6 @@
 <!-- WarehouseManager.vue -->
 <template>
   <warehouse-list :warehouses="warehouses" @add-product="openAddDialog" @view-products="openViewDialog" />
-  <add-product-dialog v-model="addDialog" :warehouse="selectedWarehouse" @product-added="updateWarehouse" />
-  <view-products-dialog v-model="viewDialog" :warehouse="selectedWarehouse" />
 </template>
 
 <script>
