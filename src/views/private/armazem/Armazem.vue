@@ -1,16 +1,18 @@
-<!-- App.vue -->
 <template>
-  <v-app>
-    <ArmazemManager />
-  </v-app>
+  <div>
+    <h1>Gerenciamento de Armazéns</h1>
+    <ArmazemList />
+  </div>
 </template>
 
 <script>
-import ArmazemManager from './components/ArmazemManager.vue';
+import ArmazemList from './components/ArmazemList.vue';
 
 export default {
+  name: 'Armazem',
   components: {
-    ArmazemManager,
+    ArmazemList,
   },
 };
 </script>
+</template>

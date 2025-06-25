@@ -14,36 +14,55 @@
           <td>
             <div class="d-flex align-items-center">
               <i class="fas fa-warehouse text-primary me-2"></i>
-              <strong>{{ warehouse.name }}</strong>
+              <strong>{{ warehouse.nome }}</strong>
             </div>
           </td>
           <td>
             <div class="d-flex align-items-center">
               <i class="fas fa-map-marker-alt text-muted me-2"></i>
-              {{ warehouse.location }}
+              {{ warehouse.localizacao || 'Não informado' }}
             </div>
           </td>
           <td>
-            <span class="badge bg-info">{{ warehouse.productCount }}</span>
+            <span class="badge bg-info">{{ warehouse.totalProdutos || 0 }}</span>
           </td>
           <td class="text-center">
             <div class="btn-group" role="group">
               <button
-                class="btn btn-sm btn-outline-primary"
+                class="btn btn-sm btn-outline-success"
                 @click="$emit('add-product', warehouse)"
                 title="Adicionar Produto"
               >
                 <i class="fas fa-plus"></i>
               </button>
               <button
-                class="btn btn-sm btn-outline-success"
+                class="btn btn-sm btn-outline-primary"
                 @click="$emit('view-products', warehouse)"
-                :disabled="warehouse.productCount === 0"
                 title="Visualizar Produtos"
               >
                 <i class="fas fa-eye"></i>
               </button>
+              <button
+                class="btn btn-sm btn-outline-warning"
+                @click="$emit('edit', warehouse)"
+                title="Editar Armazém"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                @click="$emit('delete', warehouse)"
+                title="Excluir Armazém"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
+          </td>
+        </tr>
+        <tr v-if="warehouses.length === 0">
+          <td colspan="4" class="text-center text-muted py-4">
+            <i class="fas fa-warehouse fa-2x mb-2"></i>
+            <p>Nenhum armazém cadastrado</p>
           </td>
         </tr>
       </tbody>
@@ -60,7 +79,7 @@ export default {
       required: true,
     },
   },
-  emits: ['add-product', 'view-products']
+  emits: ['add-product', 'view-products', 'edit', 'delete']
 };
 </script>
 
@@ -105,6 +124,16 @@ export default {
 .btn-outline-success:hover {
   background: #48bb78;
   border-color: #48bb78;
+}
+
+.btn-outline-warning:hover {
+  background: #ed8936;
+  border-color: #ed8936;
+}
+
+.btn-outline-danger:hover {
+  background: #f56565;
+  border-color: #f56565;
 }
 
 .badge {
